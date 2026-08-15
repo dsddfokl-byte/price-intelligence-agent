@@ -1,0 +1,104 @@
+name: Rakuten API connection test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      RAKUTEN_APP_ID: ${{ secrets.RAKUTEN_APP_ID }}
+      RAKUTEN_ACCESS_KEY: ${{ secrets.RAKUTEN_ACCESS_KEY }}
+      RAKUTEN_AFFILIATE_ID: ${{ secrets.RAKUTEN_AFFILIATE_ID }}
+    steps:
+      - name: Call Rakuten Ichiba Item Search API once
+        shell: bash
+        run: |
+          python3 <<'PY'
+          import json
+          import os
+          import sys
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+
+          endpoint = "https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20260701"
+          secret_names = (
+              "RAKUTEN_APP_ID",
+              "RAKUTEN_ACCESS_KEY",
+              "RAKUTEN_AFFILIATE_ID",
+          )
+          missing = [name for name in secret_names if not os.environ.get(name)]
+          if missing:
+              print("Missing required Repository Secrets: " + ", ".join(missing))
+              sys.exit(1)
+
+          secrets = [os.environ[name] for name in secret_names]
+
+          def redact(value):
+              text = str(value).replace("\r", " ").replace("\n", " ")
+              for secret in secrets:
+                  text = text.replace(secret, "[REDACTED]")
+              return text
+
+          def error_summary(body, reason):
+              try:
+                  payload = json.loads(body)
+              except (json.JSONDecodeError, TypeError):
+                  return redact(reason or "HTTP error")
+              if isinstance(payload, dict):
+                  summary = payload.get("error_description") or payload.get("error")
+                  if summary:
+                      return redact(summary)
+              return redact(reason or "HTTP error")
+
+          query = urllib.parse.urlencode(
+              {
+                  "applicationId": os.environ["RAKUTEN_APP_ID"],
+                  "affiliateId": os.environ["RAKUTEN_AFFILIATE_ID"],
+                  "keyword": "猫 フード",
+                  "hits": 5,
+                  "format": "json",
+              }
+          )
+          request = urllib.request.Request(
+              f"{endpoint}?{query}",
+              headers={"accessKey": os.environ["RAKUTEN_ACCESS_KEY"]},
+              method="GET",
+          )
+
+          try:
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  status = response.status
+                  body = response.read().decode("utf-8", errors="replace")
+          except urllib.error.HTTPError as error:
+              status = error.code
+              body = error.read().decode("utf-8", errors="replace")
+              print(f"HTTP status: {status}")
+              print(f"Error: {error_summary(body, error.reason)}")
+              sys.exit(1)
+          except (urllib.error.URLError, TimeoutError):
+              print("Request failed: network error or timeout")
+              sys.exit(1)
+
+          if status != 200:
+              print(f"HTTP status: {status}")
+              print(f"Error: {error_summary(body, 'HTTP error')}")
+              sys.exit(1)
+
+          try:
+              payload = json.loads(body)
+          except json.JSONDecodeError:
+              print("HTTP status: 200")
+              print("Error: response was not valid JSON")
+              sys.exit(1)
+
+          items = payload.get("Items", payload.get("items", []))
+          item_count = len(items) if isinstance(items, list) else 0
+          print("HTTP status: 200")
+          print(f"Success: received {item_count} items")
+          PY
