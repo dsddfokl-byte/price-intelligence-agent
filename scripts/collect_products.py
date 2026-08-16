@@ -112,6 +112,7 @@ def main() -> int:
 
     scored_products: List[Tuple[float, str, Product]] = []
     baseline_prices: Dict[str, Optional[int]] = {}
+    baseline_history_counts: Dict[str, int] = {}
     had_error = False
 
     with Database(settings.database_path) as database, RakutenClient(settings) as client:
@@ -126,8 +127,15 @@ def main() -> int:
                         baseline_prices[product.item_code] = database.previous_price(
                             product.item_code
                         )
+                        baseline_history_counts[
+                            product.item_code
+                        ] = database.price_history_count(product.item_code)
                     previous_price = baseline_prices[product.item_code]
-                    score = calculate_deal_score(product, previous_price)
+                    score = calculate_deal_score(
+                        product,
+                        previous_price,
+                        price_history_count=baseline_history_counts[product.item_code],
+                    )
                     scored_products.append((score, keyword, product))
                 database.save_products(products)
                 database.finish_collection(

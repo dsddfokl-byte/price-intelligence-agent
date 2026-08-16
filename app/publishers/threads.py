@@ -258,7 +258,11 @@ def evaluate_product(
     current_time = now or utc_now()
     product = _product_from_row(row)
     previous_price = row["previous_price"]
-    deal_score = calculate_deal_score(product, previous_price)
+    deal_score = calculate_deal_score(
+        product,
+        previous_price,
+        price_history_count=row["price_history_count"],
+    )
 
     if deal_score < config.minimum_deal_score:
         return None, f"Deal Scoreが{config.minimum_deal_score:.0f}未満"

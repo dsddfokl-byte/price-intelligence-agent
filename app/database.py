@@ -119,6 +119,16 @@ class Database:
         ).fetchone()
         return int(row["price"]) if row is not None else None
 
+    def price_history_count(self, item_code: str) -> int:
+        row = self.connection.execute(
+            """
+            SELECT COUNT(*) AS count FROM price_history
+            WHERE item_code = ? AND price IS NOT NULL
+            """,
+            (item_code,),
+        ).fetchone()
+        return int(row["count"])
+
     def save_products(self, products: Iterable[Product]) -> None:
         with self.connection:
             for product in products:
@@ -171,6 +181,10 @@ class Database:
             """
             SELECT p.*,
                    (
+                       SELECT COUNT(*) FROM price_history ph
+                       WHERE ph.item_code = p.item_code AND ph.price IS NOT NULL
+                   ) AS price_history_count,
+                   (
                        SELECT ph.price FROM price_history ph
                        WHERE ph.item_code = p.item_code
                          AND ph.price IS NOT NULL
@@ -186,6 +200,10 @@ class Database:
         return self.connection.execute(
             """
             SELECT p.*,
+                   (
+                       SELECT COUNT(*) FROM price_history ph
+                       WHERE ph.item_code = p.item_code AND ph.price IS NOT NULL
+                   ) AS price_history_count,
                    (
                        SELECT ph.price FROM price_history ph
                        WHERE ph.item_code = p.item_code
