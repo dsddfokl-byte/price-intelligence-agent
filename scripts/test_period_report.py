@@ -12,12 +12,10 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from app.config import DATABASE_PATH  # noqa: E402
+from app.collector import load_search_terms  # noqa: E402
+from app.config import DATABASE_PATH, SEARCH_TERMS_PATH  # noqa: E402
 from app.database import Database  # noqa: E402
 from app.init import initialize_database  # noqa: E402
-
-
-CATEGORIES = ("猫 フード", "猫砂", "ペットシーツ", "犬 フード")
 
 
 def number(value: object) -> int:
@@ -116,11 +114,12 @@ def main() -> int:
             )
 
         print("\nカテゴリー別")
-        for category in CATEGORIES:
+        for category in load_search_terms(SEARCH_TERMS_PATH):
             row = connection.execute(
                 """
                 SELECT COUNT(DISTINCT tp.id) AS posts,
                        AVG(tp.deal_score) AS avg_score,
+                       COALESCE(SUM(tp.views), 0) AS total_views,
                        AVG(tp.views) AS avg_views
                 FROM threads_posts tp
                 WHERE tp.status = 'published'
@@ -151,7 +150,8 @@ def main() -> int:
             )
             print(
                 f"{category}: 投稿数={number(row['posts'])}, "
-                f"平均Deal Score={avg_score}, 平均views={avg_views}"
+                f"平均Deal Score={avg_score}, views合計={number(row['total_views'])}, "
+                f"平均views={avg_views}"
             )
 
         print("\n時間帯別（Asia/Tokyo）")

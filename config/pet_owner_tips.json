@@ -126,5 +126,125 @@
     "source_name": null,
     "source_url": null,
     "reviewed": true
+  },
+  {
+    "tip_id": "dog_treat_compare_weight", "category": "犬 おやつ",
+    "text": "価格を比べるときは、内容量と1袋あたりの価格も確認すると比較しやすくなります。",
+    "source_name": null, "source_url": null, "reviewed": true
+  },
+  {
+    "tip_id": "dog_treat_age_label", "category": "犬 おやつ",
+    "text": "購入前に、対象年齢の表示を確認しましょう。",
+    "source_name": null, "source_url": null, "reviewed": true
+  },
+  {
+    "tip_id": "dog_treat_storage_label", "category": "犬 おやつ",
+    "text": "開封後の保存方法は、商品表示を確認しておくと選びやすくなります。",
+    "source_name": null, "source_url": null, "reviewed": true
+  },
+  {
+    "tip_id": "cat_treat_compare_weight", "category": "猫 おやつ",
+    "text": "価格を比べるときは、内容量と1袋あたりの価格も確認すると比較しやすくなります。",
+    "source_name": null, "source_url": null, "reviewed": true
+  },
+  {
+    "tip_id": "cat_treat_age_label", "category": "猫 おやつ",
+    "text": "購入前に、対象年齢の表示を確認しましょう。",
+    "source_name": null, "source_url": null, "reviewed": true
+  },
+  {
+    "tip_id": "cat_treat_storage_label", "category": "猫 おやつ",
+    "text": "開封後の保存方法は、商品表示を確認しておくと選びやすくなります。",
+    "source_name": null, "source_url": null, "reviewed": true
+  },
+  {
+    "tip_id": "dog_toy_product_size", "category": "犬 おもちゃ",
+    "text": "購入前に、商品サイズを確認しましょう。",
+    "source_name": null, "source_url": null, "reviewed": true
+  },
+  {
+    "tip_id": "dog_toy_storage_space", "category": "犬 おもちゃ",
+    "text": "使用場所と収納スペースを考えてサイズを選ぶと扱いやすくなります。",
+    "source_name": null, "source_url": null, "reviewed": true
+  },
+  {
+    "tip_id": "dog_toy_usage_label", "category": "犬 おもちゃ",
+    "text": "対象サイズや使用上の注意表示があれば、購入前に確認しましょう。",
+    "source_name": null, "source_url": null, "reviewed": true
+  },
+  {
+    "tip_id": "cat_toy_product_size", "category": "猫 おもちゃ",
+    "text": "購入前に、商品サイズを確認しましょう。",
+    "source_name": null, "source_url": null, "reviewed": true
+  },
+  {
+    "tip_id": "cat_toy_storage_space", "category": "猫 おもちゃ",
+    "text": "使用場所と収納スペースを考えてサイズを選ぶと扱いやすくなります。",
+    "source_name": null, "source_url": null, "reviewed": true
+  },
+  {
+    "tip_id": "cat_toy_usage_label", "category": "猫 おもちゃ",
+    "text": "対象サイズや使用上の注意表示があれば、購入前に確認しましょう。",
+    "source_name": null, "source_url": null, "reviewed": true
+  },
+  {
+    "tip_id": "auto_feeder_portion_setting", "category": "ペット 自動給餌器",
+    "text": "1回あたりの設定可能量を商品説明で確認しましょう。",
+    "source_name": null, "source_url": null, "reviewed": true
+  },
+  {
+    "tip_id": "auto_feeder_food_compatibility", "category": "ペット 自動給餌器",
+    "text": "対応フードの種類や粒サイズの表示を確認しましょう。",
+    "source_name": null, "source_url": null, "reviewed": true
+  },
+  {
+    "tip_id": "auto_feeder_power_space", "category": "ペット 自動給餌器",
+    "text": "電源方式と本体サイズを確認し、設置スペースに合うか確かめましょう。",
+    "source_name": null, "source_url": null, "reviewed": true
+  },
+  {
+    "tip_id": "waterer_tank_capacity", "category": "ペット 給水器",
+    "text": "タンク容量を商品説明で確認しましょう。",
+    "source_name": null, "source_url": null, "reviewed": true
+  },
+  {
+    "tip_id": "waterer_filter_replacement", "category": "ペット 給水器",
+    "text": "フィルター交換の有無と交換方法を商品説明で確認しましょう。",
+    "source_name": null, "source_url": null, "reviewed": true
+  },
+  {
+    "tip_id": "waterer_power_cleaning", "category": "ペット 給水器",
+    "text": "電源方式と清掃方法を商品説明で確認して選びましょう。",
+    "source_name": null, "source_url": null, "reviewed": true
+  },
+  {
+    "tip_id": "pet_camera_wifi_band", "category": "ペットカメラ",
+    "text": "利用環境に合うWi-Fi対応帯域か、商品説明を確認しましょう。",
+    "source_name": null, "source_url": null, "reviewed": true
+  },
+  {
+    "tip_id": "pet_camera_storage_plan", "category": "ペットカメラ",
+    "text": "保存方式と月額サービスの有無を商品説明で確認しましょう。",
+    "source_name": null, "source_url": null, "reviewed": true
+  },
+  {
+    "tip_id": "pet_camera_features_view", "category": "ペットカメラ",
+    "text": "必要な機能、設置場所、視野角の表示を確認して選びましょう。",
+    "source_name": null, "source_url": null, "reviewed": true
+  },
+  {
+    "tip_id": "pet_toilet_size_space", "category": "ペット トイレ",
+    "text": "本体サイズを確認し、設置スペースに合うか確かめましょう。",
+    "source_name": null, "source_url": null, "reviewed": true
+  },
+  {
+    "tip_id": "pet_toilet_consumable_fit", "category": "ペット トイレ",
+    "text": "使用する猫砂やシーツとの適合を商品説明で確認しましょう。",
+    "source_name": null, "source_url": null, "reviewed": true
+  },
+  {
+    "tip_id": "pet_toilet_entry_cleaning", "category": "ペット トイレ",
+    "text": "入口の高さと清掃方法を商品説明で確認して選びましょう。",
+    "source_name": null, "source_url": null, "reviewed": true
   }
 ]

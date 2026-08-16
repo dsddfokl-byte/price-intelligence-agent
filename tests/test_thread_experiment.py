@@ -6,7 +6,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import Mock
 
-from app.config import THREADS_PUBLISHING, THREADS_TOPIC_TAGS
+from app.collector import load_search_terms
+from app.config import SEARCH_TERMS_PATH, THREADS_PUBLISHING, THREADS_TOPIC_TAGS
 from app.database import Database
 from app.models import Product
 from app.publishers.threads import ThreadsAPIError, ThreadsPublisher, evaluate_product
@@ -71,9 +72,25 @@ class ThreadExperimentTests(unittest.TestCase):
     def test_topic_mapping_and_daily_limit_are_unchanged(self) -> None:
         self.assertEqual(
             THREADS_TOPIC_TAGS,
-            {"猫 フード": "猫", "猫砂": "猫", "ペットシーツ": "ペット", "犬 フード": "犬"},
+            {
+                "猫 フード": "猫", "猫砂": "猫", "ペットシーツ": "ペット",
+                "犬 フード": "犬", "犬 おやつ": "犬", "猫 おやつ": "猫",
+                "犬 おもちゃ": "犬", "猫 おもちゃ": "猫",
+                "ペット 自動給餌器": "ペット", "ペット 給水器": "ペット",
+                "ペットカメラ": "ペット", "ペット トイレ": "ペット",
+            },
         )
         self.assertEqual(THREADS_PUBLISHING.daily_post_limit, 2)
+
+    def test_all_search_terms_have_topic_tags_and_owner_tips(self) -> None:
+        search_terms = load_search_terms(SEARCH_TERMS_PATH)
+        self.assertEqual(len(search_terms), 12)
+        self.assertEqual(set(search_terms), set(THREADS_TOPIC_TAGS))
+        tips = load_owner_tips()
+        for category in search_terms:
+            self.assertGreaterEqual(
+                len([tip for tip in tips if tip.category == category]), 3
+            )
 
     def test_both_templates_are_safe_and_complete(self) -> None:
         tip = next(item for item in load_owner_tips() if item.category == "猫砂")
