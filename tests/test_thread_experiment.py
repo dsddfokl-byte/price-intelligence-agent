@@ -10,6 +10,7 @@ from app.config import THREADS_PUBLISHING, THREADS_TOPIC_TAGS
 from app.database import Database
 from app.models import Product
 from app.publishers.threads import ThreadsAPIError, ThreadsPublisher, evaluate_product
+from app.publishers.title_formatter import shorten_product_title
 from app.thread_content import (
     OWNER_VALUE,
     PRICE_CONTROL,
@@ -91,6 +92,41 @@ class ThreadExperimentTests(unittest.TestCase):
     def test_trigger_uses_only_product_data(self) -> None:
         self.assertEqual(build_content_trigger(product(), 2200), "前回チェックより10.0%下落")
         self.assertEqual(build_content_trigger(product(), 1980), "ポイント5倍")
+
+    def test_trigger_icons_and_owner_heading(self) -> None:
+        tip = next(item for item in load_owner_tips() if item.category == "猫砂")
+        cases = (
+            ("前回チェックより2.4%下落", "📉"),
+            ("ポイント3倍", "🎁"),
+            ("送料込み", "📦"),
+            ("レビュー2,000件以上", "⭐"),
+            ("確認ポイント", "💡"),
+        )
+        for trigger, icon in cases:
+            for variant, selected_tip in ((PRICE_CONTROL, None), (OWNER_VALUE, tip)):
+                text = generate_experiment_text(
+                    product(), 76.7, "猫砂", variant, selected_tip, trigger
+                )
+                self.assertIn(f"{icon} {trigger}", text)
+                self.assertNotIn("📡", text)
+        owner_text = generate_experiment_text(
+            product(), 76.7, "猫砂", OWNER_VALUE, tip, cases[0][0]
+        )
+        self.assertIn("\n今日チェックした商品\n", owner_text)
+
+    def test_promotional_title_removal_preserves_product_details(self) -> None:
+        self.assertEqual(
+            shorten_product_title(
+                "【圧倒的高評価！】ペットシーツ 洗える 猫 犬 おしっこパッド"
+            ),
+            "ペットシーツ 洗える 猫 犬 おしっこパッド",
+        )
+        self.assertEqual(
+            shorten_product_title(
+                "【ランキング1位】【送料無料】ニュートロ シュプレモ 小型犬 成犬用 3kg"
+            ),
+            "ニュートロ シュプレモ 小型犬 成犬用 3kg",
+        )
 
     def test_tip_reuse_query_counts_only_published(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

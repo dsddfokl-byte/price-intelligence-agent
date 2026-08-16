@@ -112,6 +112,22 @@ def _category_style(category: str) -> tuple:
     return "🐾", "ペット"
 
 
+def _format_trigger(content_trigger: Optional[str]) -> str:
+    if not content_trigger:
+        return ""
+    if content_trigger.startswith("前回チェックより"):
+        icon = "📉"
+    elif content_trigger.startswith("ポイント"):
+        icon = "🎁"
+    elif content_trigger == "送料込み":
+        icon = "📦"
+    elif content_trigger.startswith("レビュー"):
+        icon = "⭐"
+    else:
+        icon = "💡"
+    return f"{icon} {content_trigger}\n\n"
+
+
 def generate_experiment_text(
     product: Product,
     deal_score: float,
@@ -136,7 +152,7 @@ def generate_experiment_text(
         review = f"★{product.review_average:g}"
         if product.review_count is not None:
             review += f" / {product.review_count:,}件"
-    trigger_line = f"📡 {content_trigger}\n\n" if content_trigger else ""
+    trigger_line = _format_trigger(content_trigger)
     tip_text = tip.text if tip else ""
 
     def render(display_title: str, utility: str, review_line: str) -> str:
@@ -152,7 +168,7 @@ def generate_experiment_text(
             body = (
                 f"【PR】{emoji} 30秒{label}メモ\n\n"
                 f"{utility}\n\n"
-                f"{trigger_line}📡 今日チェックした商品\n"
+                f"{trigger_line}今日チェックした商品\n"
                 f"{display_title}\n\n"
                 f"確認時価格：{price}\n"
                 f"{review_line}\n\n"
