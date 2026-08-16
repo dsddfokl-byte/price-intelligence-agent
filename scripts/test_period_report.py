@@ -4,6 +4,8 @@
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from statistics import median
+from zoneinfo import ZoneInfo
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -20,6 +22,20 @@ CATEGORIES = ("猫 フード", "猫砂", "ペットシーツ", "犬 フード")
 
 def number(value: object) -> int:
     return int(value or 0)
+
+
+def print_insight_group(label: str, rows: list) -> None:
+    views = [number(row["views"]) for row in rows]
+    print(
+        f"{label}: 投稿数={len(rows)}, views合計={sum(views)}, "
+        f"平均views={(sum(views) / len(rows) if rows else 0):.2f}, "
+        f"median views={median(views) if views else 0:.2f}, "
+        f"likes={sum(number(row['likes']) for row in rows)}, "
+        f"replies={sum(number(row['replies']) for row in rows)}, "
+        f"reposts={sum(number(row['reposts']) for row in rows)}, "
+        f"quotes={sum(number(row['quotes']) for row in rows)}, "
+        f"shares={sum(number(row['shares']) for row in rows)}"
+    )
 
 
 def main() -> int:
@@ -46,6 +62,7 @@ def main() -> int:
                    COALESCE(SUM(likes), 0) AS likes,
                    COALESCE(SUM(replies), 0) AS replies,
                    COALESCE(SUM(reposts), 0) AS reposts,
+                   COALESCE(SUM(quotes), 0) AS quotes,
                    COALESCE(SUM(shares), 0) AS shares
             FROM threads_posts
             WHERE status = 'published' AND posted_at >= ?
@@ -65,7 +82,38 @@ def main() -> int:
         print(f"likes: {number(threads['likes'])}")
         print(f"replies: {number(threads['replies'])}")
         print(f"reposts: {number(threads['reposts'])}")
+        print(f"quotes: {number(threads['quotes'])}")
         print(f"shares: {number(threads['shares'])}")
+
+        post_rows = connection.execute(
+            """
+            SELECT * FROM threads_posts
+            WHERE status = 'published' AND posted_at >= ?
+            """,
+            (since,),
+        ).fetchall()
+
+        print("\nVariant別")
+        for variant in ("PRICE_CONTROL", "OWNER_VALUE"):
+            print_insight_group(
+                variant,
+                [row for row in post_rows if row["template_variant"] == variant],
+            )
+
+        print("\nTopic別")
+        topics = sorted(
+            {row["topic_tag"] for row in post_rows if row["topic_tag"] is not None}
+        )
+        if not topics:
+            print("topic_tag付き投稿なし")
+        for topic in topics:
+            topic_rows = [row for row in post_rows if row["topic_tag"] == topic]
+            total_views = sum(number(row["views"]) for row in topic_rows)
+            print(
+                f"{topic}: 投稿数={len(topic_rows)}, views合計={total_views}, "
+                f"平均views={total_views / len(topic_rows):.2f}, "
+                f"replies={sum(number(row['replies']) for row in topic_rows)}"
+            )
 
         print("\nカテゴリー別")
         for category in CATEGORIES:
@@ -74,14 +122,22 @@ def main() -> int:
                 SELECT COUNT(DISTINCT tp.id) AS posts,
                        AVG(tp.deal_score) AS avg_score,
                        AVG(tp.views) AS avg_views
-                FROM product_keywords pk
-                LEFT JOIN threads_posts tp
-                  ON tp.item_code = pk.item_code
-                 AND tp.status = 'published'
-                 AND tp.posted_at >= ?
-                WHERE pk.keyword = ?
+                FROM threads_posts tp
+                WHERE tp.status = 'published'
+                  AND tp.posted_at >= ?
+                  AND (
+                      tp.search_keyword = ?
+                      OR (
+                          tp.search_keyword IS NULL
+                          AND EXISTS (
+                              SELECT 1 FROM product_keywords pk
+                              WHERE pk.item_code = tp.item_code
+                                AND pk.keyword = ?
+                          )
+                      )
+                  )
                 """,
-                (since, category),
+                (since, category, category),
             ).fetchone()
             avg_score = (
                 f"{float(row['avg_score']):.2f}"
@@ -97,6 +153,18 @@ def main() -> int:
                 f"{category}: 投稿数={number(row['posts'])}, "
                 f"平均Deal Score={avg_score}, 平均views={avg_views}"
             )
+
+        print("\n時間帯別（Asia/Tokyo）")
+        tokyo = ZoneInfo("Asia/Tokyo")
+        for hour in (7, 12, 17, 21):
+            hour_rows = []
+            for row in post_rows:
+                posted_at = datetime.fromisoformat(row["posted_at"])
+                if posted_at.astimezone(tokyo).hour == hour:
+                    hour_rows.append(row)
+            total_views = sum(number(row["views"]) for row in hour_rows)
+            average = total_views / len(hour_rows) if hour_rows else 0
+            print(f"{hour:02d}時台: 投稿数={len(hour_rows)}, 平均views={average:.2f}")
 
         print("\n商品別TOP10（views降順）")
         rows = connection.execute(

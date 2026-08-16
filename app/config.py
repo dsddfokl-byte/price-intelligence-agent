@@ -17,8 +17,15 @@ AUTOMATION_LOG_PATH = PROJECT_ROOT / "logs" / "automation.log"
 INSIGHTS_LOG_PATH = PROJECT_ROOT / "logs" / "threads_insights.log"
 RUN_CYCLE_LOCK_PATH = PROJECT_ROOT / "data" / "run_cycle.lock"
 SEARCH_TERMS_PATH = PROJECT_ROOT / "config" / "search_terms.json"
+PET_OWNER_TIPS_PATH = PROJECT_ROOT / "config" / "pet_owner_tips.json"
 THREADS_API_BASE_URL = "https://graph.threads.net/v1.0"
 THREADS_USERNAME = "kaidoki_radar_"
+THREADS_TOPIC_TAGS = {
+    "猫 フード": "猫",
+    "猫砂": "猫",
+    "ペットシーツ": "ペット",
+    "犬 フード": "犬",
+}
 REQUIRED_ENV_VARS = (
     "RAKUTEN_APP_ID",
     "RAKUTEN_ACCESS_KEY",

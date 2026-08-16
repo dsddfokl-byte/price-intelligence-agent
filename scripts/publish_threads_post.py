@@ -88,7 +88,9 @@ def main() -> int:
         try:
             access_token = load_threads_access_token()
             with ThreadsPublisher(access_token) as publisher:
-                post_id = publisher.publish_text(candidate.text)
+                post_id = publisher.publish_text(
+                    candidate.text, topic_tag=candidate.topic_tag
+                )
         except (ConfigurationError, ThreadsAPIError) as error:
             safe_error = str(error)
             database.record_threads_post(
@@ -100,6 +102,11 @@ def main() -> int:
                 text_hash=candidate.text_hash,
                 status="failed",
                 error=safe_error,
+                topic_tag=candidate.topic_tag,
+                template_variant=candidate.template_variant,
+                tip_id=candidate.tip_id,
+                content_trigger=candidate.content_trigger,
+                search_keyword=candidate.search_keyword,
             )
             LOGGER.error(
                 "Threads publish failed for item_code=%s: %s",
@@ -117,6 +124,11 @@ def main() -> int:
             price=candidate.product.item_price,
             text_hash=candidate.text_hash,
             status="published",
+            topic_tag=candidate.topic_tag,
+            template_variant=candidate.template_variant,
+            tip_id=candidate.tip_id,
+            content_trigger=candidate.content_trigger,
+            search_keyword=candidate.search_keyword,
         )
         LOGGER.info(
             "Threads publish succeeded for item_code=%s post_id=%s",

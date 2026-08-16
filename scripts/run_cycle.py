@@ -154,13 +154,19 @@ def run_cycle(args: argparse.Namespace) -> int:
                     print("DRY RUN: Threadsへは投稿しません")
                     print(f"item_code: {candidate.product.item_code}")
                     print(f"deal_score: {candidate.deal_score:.2f}")
+                    print(f"topic_tag: {candidate.topic_tag}")
+                    print(f"template_variant: {candidate.template_variant}")
+                    print(f"tip_id: {candidate.tip_id or 'N/A'}")
+                    print(f"content_trigger: {candidate.content_trigger or 'N/A'}")
                     print(candidate.text)
                     return 0
 
                 try:
                     token = load_threads_access_token()
                     with ThreadsPublisher(token) as publisher:
-                        post_id = publisher.publish_text(candidate.text)
+                        post_id = publisher.publish_text(
+                            candidate.text, topic_tag=candidate.topic_tag
+                        )
                 except (ConfigurationError, ThreadsAPIError) as error:
                     database.record_threads_post(
                         item_code=candidate.product.item_code,
@@ -171,6 +177,11 @@ def run_cycle(args: argparse.Namespace) -> int:
                         text_hash=candidate.text_hash,
                         status="failed",
                         error=str(error),
+                        topic_tag=candidate.topic_tag,
+                        template_variant=candidate.template_variant,
+                        tip_id=candidate.tip_id,
+                        content_trigger=candidate.content_trigger,
+                        search_keyword=candidate.search_keyword,
                     )
                     LOGGER.error(
                         "Threads publish failed item_code=%s error=%s",
@@ -187,6 +198,11 @@ def run_cycle(args: argparse.Namespace) -> int:
                     price=candidate.product.item_price,
                     text_hash=candidate.text_hash,
                     status="published",
+                    topic_tag=candidate.topic_tag,
+                    template_variant=candidate.template_variant,
+                    tip_id=candidate.tip_id,
+                    content_trigger=candidate.content_trigger,
+                    search_keyword=candidate.search_keyword,
                 )
                 LOGGER.info(
                     "Threads publish succeeded item_code=%s deal_score=%.2f post_id=%s",

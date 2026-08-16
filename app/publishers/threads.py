@@ -14,13 +14,23 @@ from app.config import (
     REQUEST_TIMEOUT,
     THREADS_API_BASE_URL,
     THREADS_PUBLISHING,
+    THREADS_TOPIC_TAGS,
     THREADS_USERNAME,
     ThreadsPublishingConfig,
 )
 from app.database import Database
 from app.models import Product
-from app.publishers.title_formatter import shorten_product_title
 from app.scoring import calculate_deal_score
+from app.thread_content import (
+    OWNER_VALUE,
+    PRICE_CONTROL,
+    OwnerTip,
+    assign_variant,
+    build_content_trigger,
+    generate_experiment_text,
+    load_owner_tips,
+    order_tips,
+)
 
 
 LOGGER = logging.getLogger("threads_publisher")
@@ -56,6 +66,11 @@ class ThreadsCandidate:
     text: str
     text_hash: str
     reason: str
+    search_keyword: str
+    topic_tag: str
+    template_variant: str
+    tip_id: Optional[str]
+    content_trigger: Optional[str]
 
 
 class ThreadsPublisher:
@@ -201,15 +216,18 @@ class ThreadsPublisher:
         self._user_id = str(user_id)
         return self._user_id
 
-    def create_text_container(self, text: str) -> str:
-        if not text or len(text) > THREADS_PUBLISHING.maximum_text_length:
-            raise ThreadsPostError("Threads text must contain 1 to 500 characters")
+    def _create_text_container_once(
+        self, text: str, topic_tag: Optional[str]
+    ) -> str:
         user_id = self.get_user_id()
+        params = {"media_type": "TEXT", "text": text}
+        if topic_tag:
+            params["topic_tag"] = topic_tag
         payload = self._request(
             "POST",
             f"/{user_id}/threads",
             stage="create",
-            params={"media_type": "TEXT", "text": text},
+            params=params,
         )
         creation_id = payload.get("id")
         if not creation_id:
@@ -220,6 +238,27 @@ class ThreadsPublisher:
         safe_creation_id = str(creation_id)
         LOGGER.debug("Threads create succeeded creation_id=%s", safe_creation_id)
         return safe_creation_id
+
+    def create_text_container(
+        self, text: str, topic_tag: Optional[str] = None
+    ) -> str:
+        if not text or len(text) > THREADS_PUBLISHING.maximum_text_length:
+            raise ThreadsPostError("Threads text must contain 1 to 500 characters")
+        try:
+            return self._create_text_container_once(text, topic_tag)
+        except ThreadsAPIError as error:
+            topic_fallback = (
+                topic_tag is not None
+                and error.status_code is not None
+                and 400 <= error.status_code < 500
+                and error.status_code != 429
+            )
+            if not topic_fallback:
+                raise
+            LOGGER.warning(
+                "Threads create rejected topic_tag; retrying once without topic_tag"
+            )
+            return self._create_text_container_once(text, None)
 
     def publish_container(self, creation_id: str) -> str:
         if not creation_id:
@@ -260,8 +299,8 @@ class ThreadsPublisher:
             stage="publish",
         )
 
-    def publish_text(self, text: str) -> str:
-        creation_id = self.create_text_container(text)
+    def publish_text(self, text: str, topic_tag: Optional[str] = None) -> str:
+        creation_id = self.create_text_container(text, topic_tag)
         time.sleep(2)
         return self.publish_container(creation_id)
 
@@ -280,6 +319,12 @@ def _product_from_row(row: Any) -> Product:
         affiliate_rate=row["affiliate_rate"],
         availability=row["availability"],
         fetched_at=row["last_seen_at"],
+        point_rate=row["point_rate"],
+        point_rate_start_time=row["point_rate_start_time"],
+        point_rate_end_time=row["point_rate_end_time"],
+        postage_flag=row["postage_flag"],
+        sale_start_time=row["sale_start_time"],
+        sale_end_time=row["sale_end_time"],
     )
 
 
@@ -292,41 +337,18 @@ def generate_post_text(
     deal_score: float,
     maximum_length: int = THREADS_PUBLISHING.maximum_text_length,
 ) -> str:
-    if not product.affiliate_url:
-        raise ThreadsPostError("Affiliate URL is required")
-    title = shorten_product_title(product.item_name)
-    price = f"{product.item_price:,}円" if product.item_price is not None else "価格情報なし"
-    review_average = (
-        f"{product.review_average:g}"
-        if product.review_average is not None
-        else "評価なし"
-    )
-    review_count = f"{product.review_count:,}" if product.review_count is not None else "0"
-
-    def render(display_title: str) -> str:
-        return (
-            "🔥 買い時レーダー\n\n"
-            f"{display_title}\n\n"
-            f"現在価格：{price}\n"
-            f"レビュー：★{review_average}（{review_count}件）\n"
-            f"Deal Score：{deal_score:.0f}/100\n\n"
-            "楽天市場で確認\n"
-            f"{product.affiliate_url}\n\n"
-            "※本投稿にはアフィリエイトリンクが含まれます。"
+    try:
+        return generate_experiment_text(
+            product,
+            deal_score,
+            "ペットシーツ",
+            PRICE_CONTROL,
+            None,
+            None,
+            maximum_length,
         )
-
-    display_title = title
-    text = render(display_title)
-    if len(text) > maximum_length:
-        excess = len(text) - maximum_length
-        keep = len(display_title) - excess
-        if keep < 2:
-            raise ThreadsPostError("Affiliate URL is too long for a safe Threads post")
-        display_title = display_title[: keep - 1].rstrip() + "…"
-        text = render(display_title)
-    if len(text) > maximum_length:
-        raise ThreadsPostError("Generated Threads post exceeds 500 characters")
-    return text
+    except ValueError as error:
+        raise ThreadsPostError(str(error)) from None
 
 
 def utc_now() -> datetime:
@@ -343,6 +365,53 @@ def daily_period_start(
     return local_midnight.astimezone(timezone.utc)
 
 
+def _build_candidate_content(
+    database: Database,
+    product: Product,
+    search_keyword: str,
+    previous_price: Optional[int],
+    deal_score: float,
+    current_time: datetime,
+    reason: str,
+    config: ThreadsPublishingConfig,
+) -> ThreadsCandidate:
+    variant = assign_variant(product.item_code, current_time)
+    selected_tip: Optional[OwnerTip] = None
+    if variant == OWNER_VALUE:
+        tip_since = (current_time - timedelta(days=30)).isoformat()
+        for tip in order_tips(
+            load_owner_tips(), search_keyword, product.item_code, current_time
+        ):
+            if not database.has_published_tip_since(tip.tip_id, tip_since):
+                selected_tip = tip
+                break
+        if selected_tip is None:
+            variant = PRICE_CONTROL
+
+    content_trigger = build_content_trigger(product, previous_price)
+    text = generate_experiment_text(
+        product,
+        deal_score,
+        search_keyword,
+        variant,
+        selected_tip,
+        content_trigger,
+        config.maximum_text_length,
+    )
+    return ThreadsCandidate(
+        product=product,
+        deal_score=deal_score,
+        text=text,
+        text_hash=post_text_hash(text),
+        reason=reason,
+        search_keyword=search_keyword,
+        topic_tag=THREADS_TOPIC_TAGS[search_keyword],
+        template_variant=variant,
+        tip_id=selected_tip.tip_id if selected_tip else None,
+        content_trigger=content_trigger,
+    )
+
+
 def evaluate_product(
     database: Database,
     row: Any,
@@ -352,6 +421,9 @@ def evaluate_product(
     current_time = now or utc_now()
     product = _product_from_row(row)
     previous_price = row["previous_price"]
+    search_keyword = row["search_keyword"]
+    if search_keyword not in THREADS_TOPIC_TAGS:
+        return None, "検索カテゴリーにtopic_tag設定がありません"
     deal_score = calculate_deal_score(
         product,
         previous_price,
@@ -364,12 +436,6 @@ def evaluate_product(
         return None, f"レビュー件数が{config.minimum_review_count}件未満"
     if not product.affiliate_url:
         return None, "affiliate_urlが存在しない"
-
-    try:
-        text = generate_post_text(product, deal_score, config.maximum_text_length)
-    except ThreadsPostError as error:
-        return None, str(error)
-    digest = post_text_hash(text)
 
     override_reason = ""
     latest_post = database.latest_published_threads_post(product.item_code)
@@ -392,14 +458,83 @@ def evaluate_product(
         if price_drop_override:
             override_reason = "（前回投稿価格から10%以上値下がり）"
 
+    try:
+        candidate = _build_candidate_content(
+            database,
+            product,
+            search_keyword,
+            previous_price,
+            deal_score,
+            current_time,
+            "投稿条件を満たしています" + override_reason,
+            config,
+        )
+    except ValueError as error:
+        return None, str(error)
+
     hash_since = (
         current_time - timedelta(days=config.text_cooldown_days)
     ).isoformat()
-    if database.has_published_text_hash_since(digest, hash_since):
+    if database.has_published_text_hash_since(candidate.text_hash, hash_since):
         return None, f"同一投稿文を{config.text_cooldown_days}日以内に投稿済み"
 
-    reason = "投稿条件を満たしています" + override_reason
-    return ThreadsCandidate(product, deal_score, text, digest, reason), reason
+    return candidate, candidate.reason
+
+
+def find_preview_candidates(
+    database: Database,
+    config: ThreadsPublishingConfig = THREADS_PUBLISHING,
+    now: Optional[datetime] = None,
+) -> List[ThreadsCandidate]:
+    """Return content samples without changing production eligibility rules."""
+    current_time = now or utc_now()
+    candidates: List[ThreadsCandidate] = []
+    template_samples: List[ThreadsCandidate] = []
+    for row in database.products_for_threads():
+        candidate, _ = evaluate_product(database, row, config, current_time)
+        if candidate is not None:
+            candidates.append(candidate)
+        if row["search_keyword"] in THREADS_TOPIC_TAGS:
+            product = _product_from_row(row)
+            deal_score = calculate_deal_score(
+                product,
+                row["previous_price"],
+                price_history_count=row["price_history_count"],
+            )
+            try:
+                template_samples.append(
+                    _build_candidate_content(
+                        database,
+                        product,
+                        row["search_keyword"],
+                        row["previous_price"],
+                        deal_score,
+                        current_time,
+                        "実験テンプレートpreview（投稿可否判定とは別）",
+                        config,
+                    )
+                )
+            except ValueError:
+                pass
+    candidates.sort(key=lambda candidate: candidate.deal_score, reverse=True)
+    if len(candidates) >= 2 and {item.template_variant for item in candidates} == {
+        PRICE_CONTROL,
+        OWNER_VALUE,
+    }:
+        return candidates[: config.candidate_limit]
+    template_samples.sort(key=lambda candidate: candidate.deal_score, reverse=True)
+    selected: List[ThreadsCandidate] = []
+    for variant in (PRICE_CONTROL, OWNER_VALUE):
+        match = next(
+            (item for item in template_samples if item.template_variant == variant),
+            None,
+        )
+        if match is not None:
+            selected.append(match)
+    for item in template_samples:
+        if item not in selected and len(selected) < config.candidate_limit:
+            selected.append(item)
+    return selected
 
 
 def find_publishable_candidates(

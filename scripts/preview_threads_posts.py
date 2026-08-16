@@ -12,7 +12,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from app.config import ConfigurationError, load_settings  # noqa: E402
 from app.database import Database  # noqa: E402
 from app.init import initialize_database  # noqa: E402
-from app.publishers.threads import find_publishable_candidates  # noqa: E402
+from app.publishers.threads import find_preview_candidates  # noqa: E402
 
 
 def main() -> int:
@@ -24,22 +24,27 @@ def main() -> int:
 
     with Database(settings.database_path) as database:
         initialize_database(database)
-        candidates = find_publishable_candidates(database)
+        candidates = find_preview_candidates(database)
 
     if not candidates:
         print("投稿可能な候補はありません。")
         return 0
 
-    print(f"投稿可能候補: {len(candidates)}件（previewのみ・投稿は実行しません）")
+    print(f"Preview候補: {len(candidates)}件（投稿は実行しません）")
     for index, candidate in enumerate(candidates, start=1):
         print("\n" + "=" * 72)
         print(f"候補 {index}")
         print(f"item_code: {candidate.product.item_code}")
+        print(f"search keyword/category: {candidate.search_keyword}")
         print(f"deal_score: {candidate.deal_score:.2f}")
+        print(f"topic_tag: {candidate.topic_tag}")
+        print(f"template_variant: {candidate.template_variant}")
+        print(f"tip_id: {candidate.tip_id or 'N/A'}")
+        print(f"content_trigger: {candidate.content_trigger or 'N/A'}")
         price = candidate.product.item_price
         print(f"price: {price:,}円" if price is not None else "price: N/A")
         print(f"投稿可否理由: {candidate.reason}")
-        print(f"文字数: {len(candidate.text)}")
+        print(f"character count: {len(candidate.text)}")
         print("-" * 72)
         print(candidate.text)
     return 0

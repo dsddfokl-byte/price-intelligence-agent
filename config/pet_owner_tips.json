@@ -1,0 +1,130 @@
+[
+  {
+    "tip_id": "cat_food_compare_weight",
+    "category": "猫 フード",
+    "text": "同じ価格帯の商品を比べるときは、内容量も一緒に確認すると選びやすくなります。",
+    "source_name": null,
+    "source_url": null,
+    "reviewed": true
+  },
+  {
+    "tip_id": "cat_food_storage_label",
+    "category": "猫 フード",
+    "text": "開封後の保存方法は、商品パッケージの表示を確認しておくと安心です。",
+    "source_name": null,
+    "source_url": null,
+    "reviewed": true
+  },
+  {
+    "tip_id": "cat_food_age_size",
+    "category": "猫 フード",
+    "text": "購入前に、対象年齢と粒サイズの表示を確認しておくのが選び方のポイントです。",
+    "source_name": null,
+    "source_url": null,
+    "reviewed": true
+  },
+  {
+    "tip_id": "cat_food_serving_label",
+    "category": "猫 フード",
+    "text": "給与量は商品ごとに異なるため、パッケージの表示を確認して選びましょう。",
+    "source_name": null,
+    "source_url": null,
+    "reviewed": true
+  },
+  {
+    "tip_id": "cat_litter_material",
+    "category": "猫砂",
+    "text": "猫砂を選ぶときは、内容量に加えて材質表示も確認すると比較しやすくなります。",
+    "source_name": null,
+    "source_url": null,
+    "reviewed": true
+  },
+  {
+    "tip_id": "cat_litter_toilet_fit",
+    "category": "猫砂",
+    "text": "購入前に、使用中のトイレ本体で使える種類か商品説明を確認しましょう。",
+    "source_name": null,
+    "source_url": null,
+    "reviewed": true
+  },
+  {
+    "tip_id": "cat_litter_storage",
+    "category": "猫砂",
+    "text": "大容量やまとめ買いでは、置き場所も考えて容量を選ぶと保管しやすくなります。",
+    "source_name": null,
+    "source_url": null,
+    "reviewed": true
+  },
+  {
+    "tip_id": "cat_litter_replacement",
+    "category": "猫砂",
+    "text": "交換方法や使用量は商品によって違うため、商品説明を確認して比較しましょう。",
+    "source_name": null,
+    "source_url": null,
+    "reviewed": true
+  },
+  {
+    "tip_id": "pet_sheets_size",
+    "category": "ペットシーツ",
+    "text": "レギュラーやワイドなど、使う場所に合うサイズ表示を確認して選びましょう。",
+    "source_name": null,
+    "source_url": null,
+    "reviewed": true
+  },
+  {
+    "tip_id": "pet_sheets_tray_fit",
+    "category": "ペットシーツ",
+    "text": "トレーで使う場合は、購入前にトレー寸法とシーツのサイズを確認しましょう。",
+    "source_name": null,
+    "source_url": null,
+    "reviewed": true
+  },
+  {
+    "tip_id": "pet_sheets_unit_count",
+    "category": "ペットシーツ",
+    "text": "価格を比べるときは、シーツの枚数も合わせて確認すると比較しやすくなります。",
+    "source_name": null,
+    "source_url": null,
+    "reviewed": true
+  },
+  {
+    "tip_id": "pet_sheets_storage",
+    "category": "ペットシーツ",
+    "text": "箱買いの前に、箱の大きさと収納スペースも確認しておくと保管がスムーズです。",
+    "source_name": null,
+    "source_url": null,
+    "reviewed": true
+  },
+  {
+    "tip_id": "dog_food_compare_weight",
+    "category": "犬 フード",
+    "text": "同じ価格帯の商品を比べるときは、内容量も一緒に確認すると選びやすくなります。",
+    "source_name": null,
+    "source_url": null,
+    "reviewed": true
+  },
+  {
+    "tip_id": "dog_food_storage_label",
+    "category": "犬 フード",
+    "text": "開封後の保存方法は、商品パッケージの表示を確認しておくと安心です。",
+    "source_name": null,
+    "source_url": null,
+    "reviewed": true
+  },
+  {
+    "tip_id": "dog_food_age_size",
+    "category": "犬 フード",
+    "text": "購入前に、対象年齢と粒サイズの表示を確認しておくのが選び方のポイントです。",
+    "source_name": null,
+    "source_url": null,
+    "reviewed": true
+  },
+  {
+    "tip_id": "dog_food_expiry",
+    "category": "犬 フード",
+    "text": "まとめて購入するときは、内容量と賞味期限表示を確認して選びましょう。",
+    "source_name": null,
+    "source_url": null,
+    "reviewed": true
+  }
+]

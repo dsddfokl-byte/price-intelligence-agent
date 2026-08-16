@@ -65,6 +65,11 @@ CREATE TABLE IF NOT EXISTS threads_posts (
     quotes INTEGER,
     shares INTEGER,
     insights_updated_at TEXT,
+    topic_tag TEXT,
+    template_variant TEXT,
+    tip_id TEXT,
+    content_trigger TEXT,
+    search_keyword TEXT,
     FOREIGN KEY(item_code) REFERENCES products(item_code)
 );
 
@@ -101,6 +106,11 @@ THREADS_INSIGHTS_MIGRATION_COLUMNS = {
     "quotes": "INTEGER",
     "shares": "INTEGER",
     "insights_updated_at": "TEXT",
+    "topic_tag": "TEXT",
+    "template_variant": "TEXT",
+    "tip_id": "TEXT",
+    "content_trigger": "TEXT",
+    "search_keyword": "TEXT",
 }
 
 
@@ -302,6 +312,12 @@ class Database:
             """
             SELECT p.*,
                    (
+                       SELECT pk.keyword FROM product_keywords pk
+                       WHERE pk.item_code = p.item_code
+                       ORDER BY pk.last_seen_at DESC, pk.keyword
+                       LIMIT 1
+                   ) AS search_keyword,
+                   (
                        SELECT COUNT(*) FROM price_history ph
                        WHERE ph.item_code = p.item_code AND ph.price IS NOT NULL
                    ) AS price_history_count,
@@ -321,6 +337,12 @@ class Database:
         return self.connection.execute(
             """
             SELECT p.*,
+                   (
+                       SELECT pk.keyword FROM product_keywords pk
+                       WHERE pk.item_code = p.item_code
+                       ORDER BY pk.last_seen_at DESC, pk.keyword
+                       LIMIT 1
+                   ) AS search_keyword,
                    (
                        SELECT COUNT(*) FROM price_history ph
                        WHERE ph.item_code = p.item_code AND ph.price IS NOT NULL
@@ -369,6 +391,17 @@ class Database:
         ).fetchone()
         return int(row["count"])
 
+    def has_published_tip_since(self, tip_id: str, since: str) -> bool:
+        row = self.connection.execute(
+            """
+            SELECT 1 FROM threads_posts
+            WHERE tip_id = ? AND status = 'published' AND posted_at >= ?
+            LIMIT 1
+            """,
+            (tip_id, since),
+        ).fetchone()
+        return row is not None
+
     def record_threads_post(
         self,
         item_code: str,
@@ -379,14 +412,20 @@ class Database:
         text_hash: str,
         status: str,
         error: Optional[str] = None,
+        topic_tag: Optional[str] = None,
+        template_variant: Optional[str] = None,
+        tip_id: Optional[str] = None,
+        content_trigger: Optional[str] = None,
+        search_keyword: Optional[str] = None,
     ) -> None:
         with self.connection:
             self.connection.execute(
                 """
                 INSERT INTO threads_posts(
                     item_code, threads_post_id, posted_at, deal_score,
-                    price, text_hash, status, error
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    price, text_hash, status, error, topic_tag,
+                    template_variant, tip_id, content_trigger, search_keyword
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     item_code,
@@ -397,5 +436,10 @@ class Database:
                     text_hash,
                     status,
                     error,
+                    topic_tag,
+                    template_variant,
+                    tip_id,
+                    content_trigger,
+                    search_keyword,
                 ),
             )
