@@ -17,6 +17,7 @@ from app.config import (
 )
 from app.database import Database
 from app.models import Product
+from app.publishers.title_formatter import shorten_product_title
 from app.scoring import calculate_deal_score
 
 
@@ -204,7 +205,7 @@ def generate_post_text(
 ) -> str:
     if not product.affiliate_url:
         raise ThreadsPostError("Affiliate URL is required")
-    title = " ".join((product.item_name or "商品名なし").split())
+    title = shorten_product_title(product.item_name)
     price = f"{product.item_price:,}円" if product.item_price is not None else "価格情報なし"
     review_average = (
         f"{product.review_average:g}"
@@ -225,7 +226,7 @@ def generate_post_text(
             "※本投稿にはアフィリエイトリンクが含まれます。"
         )
 
-    display_title = title if len(title) <= 80 else title[:79].rstrip() + "…"
+    display_title = title
     text = render(display_title)
     if len(text) > maximum_length:
         excess = len(text) - maximum_length
