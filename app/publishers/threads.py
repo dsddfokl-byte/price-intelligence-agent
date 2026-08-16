@@ -6,6 +6,7 @@ import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
+from zoneinfo import ZoneInfo
 
 import requests
 
@@ -332,10 +333,14 @@ def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def utc_day_start(now: datetime) -> datetime:
-    return now.astimezone(timezone.utc).replace(
+def daily_period_start(
+    now: datetime,
+    timezone_name: str = THREADS_PUBLISHING.daily_timezone,
+) -> datetime:
+    local_midnight = now.astimezone(ZoneInfo(timezone_name)).replace(
         hour=0, minute=0, second=0, microsecond=0
     )
+    return local_midnight.astimezone(timezone.utc)
 
 
 def evaluate_product(
@@ -404,7 +409,7 @@ def find_publishable_candidates(
 ) -> List[ThreadsCandidate]:
     current_time = now or utc_now()
     posted_today = database.published_threads_count_since(
-        utc_day_start(current_time).isoformat()
+        daily_period_start(current_time, config.daily_timezone).isoformat()
     )
     remaining = max(0, config.daily_post_limit - posted_today)
     limit = min(config.candidate_limit, remaining)

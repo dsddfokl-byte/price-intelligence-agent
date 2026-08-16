@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 """Collect Rakuten products, persist them, and display the top deal scores."""
 
-import json
 import logging
 import sys
-from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Sequence
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -21,18 +19,17 @@ from app.config import (  # noqa: E402
     Settings,
     load_settings,
 )
+from app.collector import (  # noqa: E402
+    ScoredProduct,
+    collect_products,
+    load_search_terms,
+)
 from app.database import Database  # noqa: E402
 from app.init import initialize_database  # noqa: E402
-from app.models import Product  # noqa: E402
 from app.rakuten_client import RakutenAPIError, RakutenClient  # noqa: E402
-from app.scoring import calculate_deal_score  # noqa: E402
 
 
 LOGGER = logging.getLogger("rakuten_collector")
-
-
-def utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="microseconds")
 
 
 def configure_logging() -> None:
@@ -52,19 +49,6 @@ def configure_logging() -> None:
     LOGGER.propagate = False
 
 
-def load_search_terms(path: Path) -> List[str]:
-    try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as error:
-        raise RuntimeError("Search terms configuration could not be loaded") from error
-    if not isinstance(payload, list) or not payload:
-        raise RuntimeError("Search terms configuration must be a non-empty JSON array")
-    terms = [term.strip() for term in payload if isinstance(term, str) and term.strip()]
-    if len(terms) != len(payload):
-        raise RuntimeError("Every search term must be a non-empty string")
-    return terms
-
-
 def redact(value: object, settings: Settings) -> str:
     text = str(value)
     for secret in (
@@ -77,13 +61,16 @@ def redact(value: object, settings: Settings) -> str:
 
 
 def display_top_results(
-    scored_products: Sequence[Tuple[float, str, Product]],
+    scored_products: Sequence[ScoredProduct],
     settings: Settings,
 ) -> None:
     print("\nDeal Score 上位5件")
-    for score, keyword, product in sorted(
-        scored_products, key=lambda entry: entry[0], reverse=True
+    for entry in sorted(
+        scored_products, key=lambda entry: entry.deal_score, reverse=True
     )[:5]:
+        score = entry.deal_score
+        keyword = entry.keyword
+        product = entry.product
         print("-")
         print(f"keyword: {redact(keyword, settings)}")
         print(f"item_name: {redact(product.item_name or 'N/A', settings)}")
@@ -110,58 +97,21 @@ def main() -> int:
         LOGGER.error("Collector configuration failed")
         return 1
 
-    scored_products: List[Tuple[float, str, Product]] = []
-    baseline_prices: Dict[str, Optional[int]] = {}
-    baseline_history_counts: Dict[str, int] = {}
-    had_error = False
-
     with Database(settings.database_path) as database, RakutenClient(settings) as client:
         initialize_database(database)
-        for keyword in search_terms:
-            collection_id = database.start_collection(keyword, utc_now())
-            LOGGER.info("Collection started for keyword=%s", keyword)
-            try:
-                products = client.search(keyword, hits=30)
-                for product in products:
-                    if product.item_code not in baseline_prices:
-                        baseline_prices[product.item_code] = database.previous_price(
-                            product.item_code
-                        )
-                        baseline_history_counts[
-                            product.item_code
-                        ] = database.price_history_count(product.item_code)
-                    previous_price = baseline_prices[product.item_code]
-                    score = calculate_deal_score(
-                        product,
-                        previous_price,
-                        price_history_count=baseline_history_counts[product.item_code],
-                    )
-                    scored_products.append((score, keyword, product))
-                database.save_products(products)
-                database.finish_collection(
-                    collection_id,
-                    utc_now(),
-                    len(products),
-                    "success",
-                )
-                LOGGER.info(
-                    "Collection completed for keyword=%s item_count=%d",
-                    keyword,
-                    len(products),
-                )
-            except RakutenAPIError as error:
-                had_error = True
-                database.finish_collection(collection_id, utc_now(), 0, "failed")
-                print(f"keyword={keyword}: {error}", file=sys.stderr)
-                LOGGER.error("Collection failed for keyword=%s: %s", keyword, error)
-            except Exception:
-                had_error = True
-                database.finish_collection(collection_id, utc_now(), 0, "failed")
-                print(f"keyword={keyword}: unexpected collection error", file=sys.stderr)
-                LOGGER.error("Collection failed for keyword=%s: unexpected error", keyword)
+        try:
+            result = collect_products(database, client, search_terms, LOGGER, hits=30)
+        except RakutenAPIError as error:
+            print(str(error), file=sys.stderr)
+            LOGGER.error("Collection failed: %s", error)
+            return 1
+        except Exception:
+            print("Unexpected collection error", file=sys.stderr)
+            LOGGER.error("Collection failed: unexpected error")
+            return 1
 
-    display_top_results(scored_products, settings)
-    return 1 if had_error else 0
+    display_top_results(result.scored_products, settings)
+    return 0
 
 
 if __name__ == "__main__":

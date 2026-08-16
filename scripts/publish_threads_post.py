@@ -25,8 +25,8 @@ from app.init import initialize_database  # noqa: E402
 from app.publishers.threads import (  # noqa: E402
     ThreadsAPIError,
     ThreadsPublisher,
+    daily_period_start,
     evaluate_product,
-    utc_day_start,
 )
 
 
@@ -74,7 +74,7 @@ def main() -> int:
             return 1
 
         posted_today = database.published_threads_count_since(
-            utc_day_start(now).isoformat()
+            daily_period_start(now, THREADS_PUBLISHING.daily_timezone).isoformat()
         )
         if posted_today >= THREADS_PUBLISHING.daily_post_limit:
             print("1日の投稿上限に達しているため投稿しません。", file=sys.stderr)
