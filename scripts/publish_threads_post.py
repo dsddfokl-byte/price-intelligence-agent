@@ -42,7 +42,7 @@ def configure_logging() -> None:
         encoding="utf-8",
     )
     handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
-    LOGGER.setLevel(logging.INFO)
+    LOGGER.setLevel(logging.DEBUG)
     LOGGER.handlers.clear()
     LOGGER.addHandler(handler)
     LOGGER.propagate = False

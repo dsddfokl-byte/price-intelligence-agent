@@ -1,6 +1,7 @@
 """Safe Threads publishing and post-candidate helpers."""
 
 import hashlib
+import logging
 import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -21,8 +22,26 @@ from app.publishers.title_formatter import shorten_product_title
 from app.scoring import calculate_deal_score
 
 
+LOGGER = logging.getLogger("threads_publisher")
+
+
 class ThreadsAPIError(RuntimeError):
     """A Threads API failure with a credential-safe message."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        stage: str,
+        status_code: Optional[int] = None,
+        code: Optional[int] = None,
+        error_subcode: Optional[int] = None,
+    ) -> None:
+        super().__init__(message)
+        self.stage = stage
+        self.status_code = status_code
+        self.code = code
+        self.error_subcode = error_subcode
 
 
 class ThreadsPostError(RuntimeError):
@@ -70,8 +89,10 @@ class ThreadsPublisher:
             "\r", " "
         ).replace("\n", " ")
 
-    def _safe_error(self, response: requests.Response) -> str:
+    def _api_error(self, response: requests.Response, stage: str) -> ThreadsAPIError:
         fields: List[str] = []
+        code: Optional[int] = None
+        error_subcode: Optional[int] = None
         try:
             payload = response.json()
         except (requests.exceptions.JSONDecodeError, ValueError):
@@ -79,17 +100,30 @@ class ThreadsPublisher:
         if isinstance(payload, dict):
             error = payload.get("error")
             if isinstance(error, dict):
+                code = error.get("code") if isinstance(error.get("code"), int) else None
+                error_subcode = (
+                    error.get("error_subcode")
+                    if isinstance(error.get("error_subcode"), int)
+                    else None
+                )
                 for name in ("message", "type", "code", "error_subcode"):
                     if error.get(name) is not None:
                         fields.append(f"{name}={self._redact(error[name])}")
         detail = ", ".join(fields) if fields else "no safe error details"
-        return f"Threads API returned HTTP {response.status_code}: {detail}"
+        return ThreadsAPIError(
+            f"Threads {stage} API failed with HTTP {response.status_code}: {detail}",
+            stage=stage,
+            status_code=response.status_code,
+            code=code,
+            error_subcode=error_subcode,
+        )
 
     def _request(
         self,
         method: str,
         path: str,
         *,
+        stage: str,
         params: Optional[Dict[str, Any]] = None,
         data: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
@@ -105,21 +139,29 @@ class ThreadsPublisher:
             except (requests.Timeout, requests.ConnectionError):
                 if attempt == 2:
                     raise ThreadsAPIError(
-                        "Threads API request failed after 3 attempts due to a temporary network error"
+                        f"Threads {stage} API failed after 3 attempts due to a temporary network error",
+                        stage=stage,
                     ) from None
                 time.sleep(2**attempt)
                 continue
             except requests.RequestException:
-                raise ThreadsAPIError("Threads API request failed") from None
+                raise ThreadsAPIError(
+                    f"Threads {stage} API request failed",
+                    stage=stage,
+                ) from None
 
             if 200 <= response.status_code < 300:
                 try:
                     payload = response.json()
                 except (requests.exceptions.JSONDecodeError, ValueError):
-                    raise ThreadsAPIError("Threads API returned invalid JSON") from None
+                    raise ThreadsAPIError(
+                        f"Threads {stage} API returned invalid JSON",
+                        stage=stage,
+                    ) from None
                 if not isinstance(payload, dict):
                     raise ThreadsAPIError(
-                        "Threads API returned an unexpected JSON structure"
+                        f"Threads {stage} API returned an unexpected JSON structure",
+                        stage=stage,
                     )
                 return payload
 
@@ -127,20 +169,34 @@ class ThreadsPublisher:
                 if attempt < 2:
                     time.sleep(2**attempt)
                     continue
-            raise ThreadsAPIError(self._safe_error(response))
+            raise self._api_error(response, stage)
 
-        raise ThreadsAPIError("Threads API request failed after 3 attempts")
+        raise ThreadsAPIError(
+            f"Threads {stage} API request failed after 3 attempts",
+            stage=stage,
+        )
 
     def get_user_id(self) -> str:
         if self._user_id is not None:
             return self._user_id
-        payload = self._request("GET", "/me", params={"fields": "id,username"})
+        payload = self._request(
+            "GET",
+            "/me",
+            stage="user lookup",
+            params={"fields": "id,username"},
+        )
         user_id = payload.get("id")
         username = payload.get("username")
         if not user_id:
-            raise ThreadsAPIError("Threads API /me response did not include a user id")
+            raise ThreadsAPIError(
+                "Threads user lookup API response did not include a user id",
+                stage="user lookup",
+            )
         if username != self.username:
-            raise ThreadsAPIError("Threads API token belongs to an unexpected username")
+            raise ThreadsAPIError(
+                "Threads user lookup API returned an unexpected username",
+                stage="user lookup",
+            )
         self._user_id = str(user_id)
         return self._user_id
 
@@ -151,29 +207,61 @@ class ThreadsPublisher:
         payload = self._request(
             "POST",
             f"/{user_id}/threads",
+            stage="create",
             params={"media_type": "TEXT", "text": text},
         )
         creation_id = payload.get("id")
         if not creation_id:
-            raise ThreadsAPIError("Threads create response did not include a creation id")
-        return str(creation_id)
+            raise ThreadsAPIError(
+                "Threads create API response did not include a creation id",
+                stage="create",
+            )
+        safe_creation_id = str(creation_id)
+        LOGGER.debug("Threads create succeeded creation_id=%s", safe_creation_id)
+        return safe_creation_id
 
     def publish_container(self, creation_id: str) -> str:
         if not creation_id:
             raise ValueError("creation_id must not be empty")
         user_id = self.get_user_id()
-        payload = self._request(
-            "POST",
-            f"/{user_id}/threads_publish",
-            params={"creation_id": creation_id},
+        retry_delays = (0, 2, 4, 8)
+        for attempt, delay in enumerate(retry_delays):
+            if delay:
+                time.sleep(delay)
+            try:
+                payload = self._request(
+                    "POST",
+                    f"/{user_id}/threads_publish",
+                    stage="publish",
+                    params={"creation_id": creation_id},
+                )
+            except ThreadsAPIError as error:
+                container_not_ready = (
+                    error.code == 24 and error.error_subcode == 4279009
+                )
+                if container_not_ready and attempt < len(retry_delays) - 1:
+                    LOGGER.warning(
+                        "Threads publish container not ready; retry=%d delay=%ds",
+                        attempt + 1,
+                        retry_delays[attempt + 1],
+                    )
+                    continue
+                raise
+            post_id = payload.get("id")
+            if not post_id:
+                raise ThreadsAPIError(
+                    "Threads publish API response did not include a post id",
+                    stage="publish",
+                )
+            return str(post_id)
+        raise ThreadsAPIError(
+            "Threads publish API failed after container readiness retries",
+            stage="publish",
         )
-        post_id = payload.get("id")
-        if not post_id:
-            raise ThreadsAPIError("Threads publish response did not include a post id")
-        return str(post_id)
 
     def publish_text(self, text: str) -> str:
         creation_id = self.create_text_container(text)
+        time.sleep(2)
         return self.publish_container(creation_id)
 
 
