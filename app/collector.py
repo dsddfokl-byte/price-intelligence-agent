@@ -56,6 +56,7 @@ def collect_products(
     baseline_prices: Dict[str, Optional[int]] = {}
     baseline_history_counts: Dict[str, int] = {}
     updated_item_codes: Set[str] = set()
+    observed_item_codes: Set[str] = set()
     fetched_count = 0
 
     for keyword in search_terms:
@@ -80,7 +81,16 @@ def collect_products(
                 )
                 scored_products.append(ScoredProduct(keyword, product, score))
                 updated_item_codes.add(product.item_code)
-            database.save_products(products)
+            history_item_codes = {
+                product.item_code
+                for product in products
+                if product.item_code not in observed_item_codes
+            }
+            database.save_products(
+                products,
+                history_item_codes=history_item_codes,
+            )
+            observed_item_codes.update(history_item_codes)
             database.save_product_keywords(
                 keyword,
                 (product.item_code for product in products),

@@ -2,7 +2,7 @@
 
 import sqlite3
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import AbstractSet, Iterable, Optional
 
 from app.models import Product
 
@@ -194,7 +194,12 @@ class Database:
         ).fetchone()
         return int(row["count"])
 
-    def save_products(self, products: Iterable[Product]) -> None:
+    def save_products(
+        self,
+        products: Iterable[Product],
+        *,
+        history_item_codes: Optional[AbstractSet[str]] = None,
+    ) -> None:
         with self.connection:
             for product in products:
                 self.connection.execute(
@@ -247,13 +252,14 @@ class Database:
                         product.fetched_at,
                     ),
                 )
-                self.connection.execute(
-                    """
-                    INSERT OR IGNORE INTO price_history(item_code, price, fetched_at)
-                    VALUES (?, ?, ?)
-                    """,
-                    (product.item_code, product.item_price, product.fetched_at),
-                )
+                if history_item_codes is None or product.item_code in history_item_codes:
+                    self.connection.execute(
+                        """
+                        INSERT OR IGNORE INTO price_history(item_code, price, fetched_at)
+                        VALUES (?, ?, ?)
+                        """,
+                        (product.item_code, product.item_price, product.fetched_at),
+                    )
 
     def save_product_keywords(
         self, keyword: str, item_codes: Iterable[str], seen_at: str
