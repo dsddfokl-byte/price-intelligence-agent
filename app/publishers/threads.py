@@ -551,10 +551,20 @@ def find_publishable_candidates(
     if limit == 0:
         return []
 
+    return find_eligible_candidates(database, config, current_time)[:limit]
+
+
+def find_eligible_candidates(
+    database: Database,
+    config: ThreadsPublishingConfig = THREADS_PUBLISHING,
+    now: Optional[datetime] = None,
+) -> List[ThreadsCandidate]:
+    """Apply production eligibility once and return the complete sorted pool."""
+    current_time = now or utc_now()
     candidates: List[ThreadsCandidate] = []
     for row in database.products_for_threads():
         candidate, _ = evaluate_product(database, row, config, current_time)
         if candidate is not None:
             candidates.append(candidate)
     candidates.sort(key=lambda candidate: candidate.deal_score, reverse=True)
-    return candidates[:limit]
+    return candidates

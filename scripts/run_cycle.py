@@ -48,7 +48,12 @@ from app.publishers.threads import (  # noqa: E402
     ThreadsAPIError,
     ThreadsPublisher,
     daily_period_start,
-    find_publishable_candidates,
+    find_eligible_candidates,
+)
+from app.optimizer_selector import (  # noqa: E402
+    OPTIMIZER_MODEL_VERSION,
+    PerformanceOptimizerSelector,
+    choose_candidate_for_arm,
 )
 from app.rakuten_client import RakutenAPIError, RakutenClient  # noqa: E402
 from app.run_lock import CycleLock, LockAlreadyHeld  # noqa: E402
@@ -175,6 +180,12 @@ def run_cycle(args: argparse.Namespace) -> int:
                         now=now,
                         clear_safe_halt=True,
                     )
+                if state.optimizer_model_version != OPTIMIZER_MODEL_VERSION:
+                    state = controller.evaluate(
+                        new_controller_evaluation_id(),
+                        now=now,
+                        optimizer_model_version=OPTIMIZER_MODEL_VERSION,
+                    )
                 policy = runtime_policy(state)
                 if policy.halt_publish:
                     LOGGER.warning("Post skipped reason=%s", policy.reason)
@@ -217,15 +228,7 @@ def run_cycle(args: argparse.Namespace) -> int:
                 if policy.force_control:
                     assigned_arm = ExperimentArm.CONTROL
                     formal_experiment = False
-                elif assigned_arm == ExperimentArm.OPTIMIZER:
-                    state = controller.evaluate(
-                        new_controller_evaluation_id(),
-                        now=now,
-                        optimizer_error="Optimizer selector is unavailable",
-                    )
-                    selector_used = "FALLBACK_CONTROL"
-                    formal_experiment = False
-                candidates = find_publishable_candidates(
+                candidates = find_eligible_candidates(
                     database, THREADS_PUBLISHING, now
                 )
                 LOGGER.info("Candidates selected candidate_count=%d", len(candidates))
@@ -233,7 +236,57 @@ def run_cycle(args: argparse.Namespace) -> int:
                     LOGGER.info("Post skipped reason=no_publishable_candidate")
                     return 0
 
-                candidate = candidates[0]
+                production_candidate = candidates[0]
+                optimizer = PerformanceOptimizerSelector(database.connection)
+                if args.dry_run:
+                    run_mode = "dry_run"
+                elif state.execution_state == ExecutionState.SHADOW:
+                    run_mode = "shadow"
+                else:
+                    run_mode = f"{state.execution_state.value.lower()}_{assigned_arm.value.lower()}"
+                optimizer_choice = None
+                try:
+                    analysis = optimizer.analyze(
+                        candidates,
+                        decided_at=now,
+                        reward_mode=state.reward_mode,
+                    )
+                    optimizer.persist_scores(
+                        analysis,
+                        cycle_id=cycle_id,
+                        run_mode=run_mode,
+                        decided_at=now,
+                        reward_mode=state.reward_mode,
+                        experiment_epoch=state.experiment_epoch,
+                    )
+                    optimizer_choice = analysis.ranking[0] if analysis.ranking else None
+                    candidate, selected_by = choose_candidate_for_arm(
+                        candidates, analysis, state, assigned_arm
+                    )
+                    selector_used = selected_by
+                except sqlite3.Error:
+                    raise
+                except Exception as error:
+                    state = controller.evaluate(
+                        new_controller_evaluation_id(),
+                        now=now,
+                        optimizer_error=type(error).__name__,
+                    )
+                    selector_used = "FALLBACK_CONTROL"
+                    formal_experiment = False
+                    candidate = production_candidate
+                if optimizer_choice is not None:
+                    optimizer.persist_decision(
+                        cycle_id=cycle_id,
+                        run_mode=run_mode,
+                        decided_at=now,
+                        production_item_code=production_candidate.product.item_code,
+                        optimizer_choice=optimizer_choice,
+                        selected_item_code=candidate.product.item_code,
+                        reward_mode=state.reward_mode,
+                        experiment_epoch=state.experiment_epoch,
+                        experiment_arm=assigned_arm,
+                    )
                 try:
                     validate_publish_payload(
                         candidate.text, candidate.product.affiliate_url
@@ -247,18 +300,19 @@ def run_cycle(args: argparse.Namespace) -> int:
                     )
                     LOGGER.critical("Post blocked reason=payload_safety_validation")
                     return 1
-                record_experiment_assignment(
-                    database.connection,
-                    cycle_id=cycle_id,
-                    state=state,
-                    arm=assigned_arm,
-                    assignment_key=assignment_key,
-                    assigned_at=now,
-                    selector_used=selector_used,
-                    selected_item_code=candidate.product.item_code,
-                    candidate_score=candidate.deal_score,
-                    formal_override=formal_experiment,
-                )
+                if not args.dry_run:
+                    record_experiment_assignment(
+                        database.connection,
+                        cycle_id=cycle_id,
+                        state=state,
+                        arm=assigned_arm,
+                        assignment_key=assignment_key,
+                        assigned_at=now,
+                        selector_used=selector_used,
+                        selected_item_code=candidate.product.item_code,
+                        candidate_score=candidate.deal_score,
+                        formal_override=formal_experiment,
+                    )
                 LOGGER.info(
                     "Post target item_code=%s deal_score=%.2f",
                     candidate.product.item_code,
@@ -270,6 +324,23 @@ def run_cycle(args: argparse.Namespace) -> int:
                     print("DRY RUN: Threadsへは投稿しません")
                     print(f"item_code: {candidate.product.item_code}")
                     print(f"deal_score: {candidate.deal_score:.2f}")
+                    print(
+                        "production_selector: "
+                        f"{production_candidate.product.item_code}"
+                    )
+                    if optimizer_choice is not None:
+                        print(
+                            "optimizer_selector: "
+                            f"{optimizer_choice.candidate.product.item_code}"
+                        )
+                        print(
+                            "optimizer_adjustment: "
+                            f"{optimizer_choice.historical_adjustment:+.2f}"
+                        )
+                        print(
+                            "optimizer_score: "
+                            f"{optimizer_choice.optimizer_score:.2f}"
+                        )
                     print(f"topic_tag: {candidate.topic_tag}")
                     print(f"template_variant: {candidate.template_variant}")
                     print(f"tip_id: {candidate.tip_id or 'N/A'}")

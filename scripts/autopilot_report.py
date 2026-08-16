@@ -92,6 +92,7 @@ def main() -> int:
                        SUM(CASE WHEN publish_status = 'failed' THEN 1 ELSE 0 END) failures
                 FROM experiment_cycles
                 WHERE experiment_epoch = ? AND experiment_arm = ?
+                  AND is_formal_experiment = 1
                 """,
                 (state.experiment_epoch, arm.value),
             ).fetchone()

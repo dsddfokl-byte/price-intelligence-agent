@@ -170,6 +170,76 @@ INSERT OR IGNORE INTO autopilot_state (
 
 CREATE INDEX IF NOT EXISTS idx_experiment_cycles_epoch_arm
     ON experiment_cycles(experiment_epoch, experiment_arm);
+
+CREATE TABLE IF NOT EXISTS post_performance_snapshots (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    threads_post_id TEXT NOT NULL,
+    captured_at TEXT NOT NULL,
+    horizon_hours REAL NOT NULL,
+    is_valid_72h INTEGER NOT NULL DEFAULT 0,
+    views INTEGER,
+    likes INTEGER,
+    replies INTEGER,
+    reposts INTEGER,
+    quotes INTEGER,
+    shares INTEGER,
+    UNIQUE(threads_post_id, captured_at)
+);
+
+CREATE TABLE IF NOT EXISTS optimizer_shadow_candidate_scores (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cycle_id TEXT NOT NULL,
+    run_mode TEXT NOT NULL,
+    decided_at TEXT NOT NULL,
+    training_data_cutoff TEXT NOT NULL,
+    item_code TEXT NOT NULL,
+    category TEXT,
+    template_variant TEXT,
+    candidate_source TEXT NOT NULL,
+    base_quality_score REAL NOT NULL,
+    global_mean_proxy REAL,
+    category_n INTEGER NOT NULL,
+    category_smoothed_proxy REAL,
+    category_delta REAL,
+    template_n INTEGER NOT NULL,
+    template_smoothed_proxy REAL,
+    template_delta REAL,
+    historical_adjustment REAL NOT NULL,
+    optimizer_score REAL NOT NULL,
+    reward_mode TEXT NOT NULL,
+    model_version TEXT NOT NULL,
+    experiment_epoch TEXT NOT NULL,
+    rank_position INTEGER NOT NULL,
+    UNIQUE(cycle_id, item_code)
+);
+
+CREATE TABLE IF NOT EXISTS optimizer_shadow_decisions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cycle_id TEXT NOT NULL UNIQUE,
+    run_mode TEXT NOT NULL,
+    decided_at TEXT NOT NULL,
+    training_data_cutoff TEXT NOT NULL,
+    production_item_code TEXT,
+    optimizer_item_code TEXT,
+    selected_item_code TEXT,
+    selected_base_score REAL,
+    selected_historical_adjustment REAL,
+    selected_optimizer_score REAL,
+    category_n INTEGER,
+    template_n INTEGER,
+    category_contribution REAL,
+    template_contribution REAL,
+    reason_summary TEXT NOT NULL,
+    reward_mode TEXT NOT NULL,
+    model_version TEXT NOT NULL,
+    experiment_epoch TEXT NOT NULL,
+    experiment_arm TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_performance_snapshots_cutoff
+    ON post_performance_snapshots(is_valid_72h, captured_at);
+CREATE INDEX IF NOT EXISTS idx_optimizer_scores_cycle_rank
+    ON optimizer_shadow_candidate_scores(cycle_id, rank_position);
 """
 
 EXPERIMENT_CYCLES_MIGRATION_COLUMNS = {
@@ -414,6 +484,27 @@ class Database:
                 (
                     views, likes, replies, reposts, quotes, shares,
                     updated_at, threads_post_id,
+                ),
+            )
+            self.connection.execute(
+                """
+                INSERT OR IGNORE INTO post_performance_snapshots(
+                    threads_post_id, captured_at, horizon_hours, is_valid_72h,
+                    views, likes, replies, reposts, quotes, shares
+                )
+                SELECT threads_post_id, ?,
+                       (julianday(?) - julianday(posted_at)) * 24.0,
+                       CASE WHEN (julianday(?) - julianday(posted_at)) * 24.0
+                                      BETWEEN 72.0 AND 96.0
+                            THEN 1 ELSE 0 END,
+                       ?, ?, ?, ?, ?, ?
+                FROM threads_posts
+                WHERE threads_post_id = ? AND status = 'published'
+                """,
+                (
+                    updated_at, updated_at, updated_at,
+                    views, likes, replies, reposts, quotes, shares,
+                    threads_post_id,
                 ),
             )
 
