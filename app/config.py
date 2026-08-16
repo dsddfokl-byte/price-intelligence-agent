@@ -14,6 +14,8 @@ REQUEST_TIMEOUT = 30
 DATABASE_PATH = PROJECT_ROOT / "database" / "affiliate.db"
 LOG_PATH = PROJECT_ROOT / "logs" / "app.log"
 SEARCH_TERMS_PATH = PROJECT_ROOT / "config" / "search_terms.json"
+THREADS_API_BASE_URL = "https://graph.threads.net/v1.0"
+THREADS_USERNAME = "kaidoki_radar_"
 REQUIRED_ENV_VARS = (
     "RAKUTEN_APP_ID",
     "RAKUTEN_ACCESS_KEY",
@@ -35,6 +37,21 @@ class Settings:
     database_path: Path = DATABASE_PATH
 
 
+@dataclass(frozen=True)
+class ThreadsPublishingConfig:
+    minimum_deal_score: float = 75.0
+    minimum_review_count: int = 20
+    candidate_limit: int = 5
+    daily_post_limit: int = 5
+    item_cooldown_days: int = 7
+    price_drop_override: float = 0.10
+    text_cooldown_days: int = 30
+    maximum_text_length: int = 500
+
+
+THREADS_PUBLISHING = ThreadsPublishingConfig()
+
+
 def load_settings() -> Settings:
     """Load and validate settings without exposing secret values."""
     load_dotenv(dotenv_path=ENV_FILE, override=True)
@@ -48,3 +65,14 @@ def load_settings() -> Settings:
         access_key=os.environ["RAKUTEN_ACCESS_KEY"],
         affiliate_id=os.environ["RAKUTEN_AFFILIATE_ID"],
     )
+
+
+def load_threads_access_token() -> str:
+    """Load the Threads token only for an explicit publishing operation."""
+    load_dotenv(dotenv_path=ENV_FILE, override=True)
+    token = os.getenv("THREADS_ACCESS_TOKEN")
+    if not token:
+        raise ConfigurationError(
+            "Required environment variable is missing: THREADS_ACCESS_TOKEN"
+        )
+    return token

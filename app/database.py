@@ -41,6 +41,24 @@ CREATE TABLE IF NOT EXISTS collections (
     item_count INTEGER NOT NULL DEFAULT 0,
     status TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS threads_posts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    item_code TEXT NOT NULL,
+    threads_post_id TEXT,
+    posted_at TEXT NOT NULL,
+    deal_score REAL NOT NULL,
+    price INTEGER,
+    text_hash TEXT NOT NULL,
+    status TEXT NOT NULL,
+    error TEXT,
+    FOREIGN KEY(item_code) REFERENCES products(item_code)
+);
+
+CREATE INDEX IF NOT EXISTS idx_threads_posts_item_code
+    ON threads_posts(item_code);
+CREATE INDEX IF NOT EXISTS idx_threads_posts_posted_at
+    ON threads_posts(posted_at);
 """
 
 
@@ -147,3 +165,98 @@ class Database:
                     """,
                     (product.item_code, product.item_price, product.fetched_at),
                 )
+
+    def products_for_threads(self) -> Iterable[sqlite3.Row]:
+        return self.connection.execute(
+            """
+            SELECT p.*,
+                   (
+                       SELECT ph.price FROM price_history ph
+                       WHERE ph.item_code = p.item_code
+                         AND ph.price IS NOT NULL
+                       ORDER BY ph.fetched_at DESC
+                       LIMIT 1 OFFSET 1
+                   ) AS previous_price
+            FROM products p
+            ORDER BY p.last_seen_at DESC
+            """
+        ).fetchall()
+
+    def product_for_threads(self, item_code: str) -> Optional[sqlite3.Row]:
+        return self.connection.execute(
+            """
+            SELECT p.*,
+                   (
+                       SELECT ph.price FROM price_history ph
+                       WHERE ph.item_code = p.item_code
+                         AND ph.price IS NOT NULL
+                       ORDER BY ph.fetched_at DESC
+                       LIMIT 1 OFFSET 1
+                   ) AS previous_price
+            FROM products p
+            WHERE p.item_code = ?
+            """,
+            (item_code,),
+        ).fetchone()
+
+    def latest_published_threads_post(self, item_code: str) -> Optional[sqlite3.Row]:
+        return self.connection.execute(
+            """
+            SELECT * FROM threads_posts
+            WHERE item_code = ? AND status = 'published'
+            ORDER BY posted_at DESC LIMIT 1
+            """,
+            (item_code,),
+        ).fetchone()
+
+    def has_published_text_hash_since(self, text_hash: str, since: str) -> bool:
+        row = self.connection.execute(
+            """
+            SELECT 1 FROM threads_posts
+            WHERE text_hash = ? AND status = 'published' AND posted_at >= ?
+            LIMIT 1
+            """,
+            (text_hash, since),
+        ).fetchone()
+        return row is not None
+
+    def published_threads_count_since(self, since: str) -> int:
+        row = self.connection.execute(
+            """
+            SELECT COUNT(*) AS count FROM threads_posts
+            WHERE status = 'published' AND posted_at >= ?
+            """,
+            (since,),
+        ).fetchone()
+        return int(row["count"])
+
+    def record_threads_post(
+        self,
+        item_code: str,
+        threads_post_id: Optional[str],
+        posted_at: str,
+        deal_score: float,
+        price: Optional[int],
+        text_hash: str,
+        status: str,
+        error: Optional[str] = None,
+    ) -> None:
+        with self.connection:
+            self.connection.execute(
+                """
+                INSERT INTO threads_posts(
+                    item_code, threads_post_id, posted_at, deal_score,
+                    price, text_hash, status, error
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    item_code,
+                    threads_post_id,
+                    posted_at,
+                    deal_score,
+                    price,
+                    text_hash,
+                    status,
+                    error,
+                ),
+            )
