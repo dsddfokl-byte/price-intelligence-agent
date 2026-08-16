@@ -14,6 +14,7 @@ REQUEST_TIMEOUT = 30
 DATABASE_PATH = PROJECT_ROOT / "database" / "affiliate.db"
 LOG_PATH = PROJECT_ROOT / "logs" / "app.log"
 AUTOMATION_LOG_PATH = PROJECT_ROOT / "logs" / "automation.log"
+INSIGHTS_LOG_PATH = PROJECT_ROOT / "logs" / "threads_insights.log"
 RUN_CYCLE_LOCK_PATH = PROJECT_ROOT / "data" / "run_cycle.lock"
 SEARCH_TERMS_PATH = PROJECT_ROOT / "config" / "search_terms.json"
 THREADS_API_BASE_URL = "https://graph.threads.net/v1.0"
@@ -44,7 +45,7 @@ class ThreadsPublishingConfig:
     minimum_deal_score: float = 75.0
     minimum_review_count: int = 20
     candidate_limit: int = 5
-    daily_post_limit: int = 3
+    daily_post_limit: int = 2
     daily_timezone: str = "Asia/Tokyo"
     item_cooldown_days: int = 7
     price_drop_override: float = 0.10

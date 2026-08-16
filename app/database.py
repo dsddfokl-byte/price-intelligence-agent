@@ -20,6 +20,12 @@ CREATE TABLE IF NOT EXISTS products (
     review_count INTEGER,
     affiliate_rate REAL,
     availability INTEGER,
+    point_rate INTEGER,
+    point_rate_start_time TEXT,
+    point_rate_end_time TEXT,
+    postage_flag INTEGER,
+    sale_start_time TEXT,
+    sale_end_time TEXT,
     first_seen_at TEXT NOT NULL,
     last_seen_at TEXT NOT NULL
 );
@@ -52,6 +58,21 @@ CREATE TABLE IF NOT EXISTS threads_posts (
     text_hash TEXT NOT NULL,
     status TEXT NOT NULL,
     error TEXT,
+    views INTEGER,
+    likes INTEGER,
+    replies INTEGER,
+    reposts INTEGER,
+    quotes INTEGER,
+    shares INTEGER,
+    insights_updated_at TEXT,
+    FOREIGN KEY(item_code) REFERENCES products(item_code)
+);
+
+CREATE TABLE IF NOT EXISTS product_keywords (
+    item_code TEXT NOT NULL,
+    keyword TEXT NOT NULL,
+    last_seen_at TEXT NOT NULL,
+    PRIMARY KEY(item_code, keyword),
     FOREIGN KEY(item_code) REFERENCES products(item_code)
 );
 
@@ -59,7 +80,28 @@ CREATE INDEX IF NOT EXISTS idx_threads_posts_item_code
     ON threads_posts(item_code);
 CREATE INDEX IF NOT EXISTS idx_threads_posts_posted_at
     ON threads_posts(posted_at);
+CREATE INDEX IF NOT EXISTS idx_product_keywords_keyword
+    ON product_keywords(keyword);
 """
+
+PRODUCT_MIGRATION_COLUMNS = {
+    "point_rate": "INTEGER",
+    "point_rate_start_time": "TEXT",
+    "point_rate_end_time": "TEXT",
+    "postage_flag": "INTEGER",
+    "sale_start_time": "TEXT",
+    "sale_end_time": "TEXT",
+}
+
+THREADS_INSIGHTS_MIGRATION_COLUMNS = {
+    "views": "INTEGER",
+    "likes": "INTEGER",
+    "replies": "INTEGER",
+    "reposts": "INTEGER",
+    "quotes": "INTEGER",
+    "shares": "INTEGER",
+    "insights_updated_at": "TEXT",
+}
 
 
 class Database:
@@ -82,6 +124,19 @@ class Database:
     def initialize(self) -> None:
         with self.connection:
             self.connection.executescript(SCHEMA)
+            self._ensure_columns("products", PRODUCT_MIGRATION_COLUMNS)
+            self._ensure_columns("threads_posts", THREADS_INSIGHTS_MIGRATION_COLUMNS)
+
+    def _ensure_columns(self, table: str, columns: dict) -> None:
+        existing = {
+            row["name"]
+            for row in self.connection.execute(f"PRAGMA table_info({table})")
+        }
+        for name, declaration in columns.items():
+            if name not in existing:
+                self.connection.execute(
+                    f"ALTER TABLE {table} ADD COLUMN {name} {declaration}"
+                )
 
     def start_collection(self, keyword: str, started_at: str) -> int:
         with self.connection:
@@ -137,8 +192,10 @@ class Database:
                     INSERT INTO products (
                         item_code, item_name, latest_price, shop_code, shop_name,
                         item_url, affiliate_url, review_average, review_count,
-                        affiliate_rate, availability, first_seen_at, last_seen_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        affiliate_rate, availability, point_rate,
+                        point_rate_start_time, point_rate_end_time, postage_flag,
+                        sale_start_time, sale_end_time, first_seen_at, last_seen_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(item_code) DO UPDATE SET
                         item_name = excluded.item_name,
                         latest_price = excluded.latest_price,
@@ -150,6 +207,12 @@ class Database:
                         review_count = excluded.review_count,
                         affiliate_rate = excluded.affiliate_rate,
                         availability = excluded.availability,
+                        point_rate = excluded.point_rate,
+                        point_rate_start_time = excluded.point_rate_start_time,
+                        point_rate_end_time = excluded.point_rate_end_time,
+                        postage_flag = excluded.postage_flag,
+                        sale_start_time = excluded.sale_start_time,
+                        sale_end_time = excluded.sale_end_time,
                         last_seen_at = excluded.last_seen_at
                     """,
                     (
@@ -164,6 +227,12 @@ class Database:
                         product.review_count,
                         product.affiliate_rate,
                         product.availability,
+                        product.point_rate,
+                        product.point_rate_start_time,
+                        product.point_rate_end_time,
+                        product.postage_flag,
+                        product.sale_start_time,
+                        product.sale_end_time,
                         product.fetched_at,
                         product.fetched_at,
                     ),
@@ -175,6 +244,58 @@ class Database:
                     """,
                     (product.item_code, product.item_price, product.fetched_at),
                 )
+
+    def save_product_keywords(
+        self, keyword: str, item_codes: Iterable[str], seen_at: str
+    ) -> None:
+        with self.connection:
+            self.connection.executemany(
+                """
+                INSERT INTO product_keywords(item_code, keyword, last_seen_at)
+                VALUES (?, ?, ?)
+                ON CONFLICT(item_code, keyword) DO UPDATE SET
+                    last_seen_at = excluded.last_seen_at
+                """,
+                ((item_code, keyword, seen_at) for item_code in item_codes),
+            )
+
+    def published_threads_posts_since(self, since: str) -> Iterable[sqlite3.Row]:
+        return self.connection.execute(
+            """
+            SELECT * FROM threads_posts
+            WHERE status = 'published'
+              AND threads_post_id IS NOT NULL
+              AND posted_at >= ?
+            ORDER BY posted_at DESC
+            """,
+            (since,),
+        ).fetchall()
+
+    def update_threads_insights(
+        self,
+        threads_post_id: str,
+        *,
+        views: Optional[int],
+        likes: Optional[int],
+        replies: Optional[int],
+        reposts: Optional[int],
+        quotes: Optional[int],
+        shares: Optional[int],
+        updated_at: str,
+    ) -> None:
+        with self.connection:
+            self.connection.execute(
+                """
+                UPDATE threads_posts SET
+                    views = ?, likes = ?, replies = ?, reposts = ?,
+                    quotes = ?, shares = ?, insights_updated_at = ?
+                WHERE threads_post_id = ? AND status = 'published'
+                """,
+                (
+                    views, likes, replies, reposts, quotes, shares,
+                    updated_at, threads_post_id,
+                ),
+            )
 
     def products_for_threads(self) -> Iterable[sqlite3.Row]:
         return self.connection.execute(

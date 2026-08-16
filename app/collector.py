@@ -81,6 +81,11 @@ def collect_products(
                 scored_products.append(ScoredProduct(keyword, product, score))
                 updated_item_codes.add(product.item_code)
             database.save_products(products)
+            database.save_product_keywords(
+                keyword,
+                (product.item_code for product in products),
+                products[0].fetched_at if products else utc_now(),
+            )
             database.finish_collection(
                 collection_id,
                 utc_now(),

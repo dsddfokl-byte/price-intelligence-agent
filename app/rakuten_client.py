@@ -13,7 +13,8 @@ from app.models import Product
 
 ELEMENTS = (
     "itemCode,itemName,itemPrice,shopCode,shopName,itemUrl,affiliateUrl,"
-    "reviewAverage,reviewCount,affiliateRate,availability"
+    "reviewAverage,reviewCount,affiliateRate,availability,pointRate,"
+    "pointRateStartTime,pointRateEndTime,postageFlag,startTime,endTime"
 )
 
 
@@ -118,6 +119,16 @@ class RakutenClient:
             affiliate_rate=self._optional_float(item.get("affiliateRate")),
             availability=self._optional_int(item.get("availability")),
             fetched_at=fetched_at,
+            point_rate=self._optional_int(item.get("pointRate")),
+            point_rate_start_time=self._sanitize_optional_text(
+                item.get("pointRateStartTime")
+            ),
+            point_rate_end_time=self._sanitize_optional_text(
+                item.get("pointRateEndTime")
+            ),
+            postage_flag=self._optional_int(item.get("postageFlag")),
+            sale_start_time=self._sanitize_optional_text(item.get("startTime")),
+            sale_end_time=self._sanitize_optional_text(item.get("endTime")),
         )
 
     def search(self, keyword: str, hits: int = 30, page: int = 1) -> List[Product]:
