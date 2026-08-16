@@ -5,6 +5,8 @@ import argparse
 import logging
 import sqlite3
 import sys
+import os
+import uuid
 from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
@@ -15,6 +17,22 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from app.collector import collect_products, load_search_terms  # noqa: E402
+from app.autopilot import (  # noqa: E402
+    AutopilotController,
+    ExecutionState,
+    ExperimentArm,
+    HaltClass,
+    StateValidationError,
+    get_state,
+    emergency_safe_halt,
+    new_controller_evaluation_id,
+    record_experiment_assignment,
+    record_publish_result,
+    runtime_policy,
+    stable_arm_assignment,
+    system_health_errors,
+    validate_publish_payload,
+)
 from app.config import (  # noqa: E402
     AUTOMATION_LOG_PATH,
     ConfigurationError,
@@ -116,6 +134,52 @@ def run_cycle(args: argparse.Namespace) -> int:
                     LOGGER.info("Collection skipped reason=--no-collect")
 
                 now = datetime.now(timezone.utc)
+                controller = AutopilotController(database.connection)
+                health_errors = system_health_errors(
+                    database.connection,
+                    now,
+                    THREADS_PUBLISHING.daily_post_limit,
+                )
+                if health_errors:
+                    controller.evaluate(
+                        new_controller_evaluation_id(),
+                        now=now,
+                        global_safety_error="; ".join(health_errors),
+                        halt_class=HaltClass.MANUAL_REVIEW_REQUIRED,
+                    )
+                try:
+                    state = get_state(database.connection)
+                except StateValidationError:
+                    state = emergency_safe_halt(
+                        database.connection,
+                        new_controller_evaluation_id(),
+                        "State machine corruption",
+                        now=now,
+                    )
+                if os.getenv("AUTOPILOT_SAFE_HALT", "").lower() in (
+                    "1", "true", "yes"
+                ) and state.execution_state != ExecutionState.SAFE_HALT:
+                    state = controller.evaluate(
+                        new_controller_evaluation_id(),
+                        now=now,
+                        global_safety_error="Human SAFE_HALT runtime override",
+                        halt_class=HaltClass.MANUAL_REVIEW_REQUIRED,
+                    )
+                if (
+                    state.execution_state == ExecutionState.SAFE_HALT
+                    and os.getenv("AUTOPILOT_CLEAR_SAFE_HALT", "").lower()
+                    in ("1", "true", "yes")
+                ):
+                    state = controller.evaluate(
+                        new_controller_evaluation_id(),
+                        now=now,
+                        clear_safe_halt=True,
+                    )
+                policy = runtime_policy(state)
+                if policy.halt_publish:
+                    LOGGER.warning("Post skipped reason=%s", policy.reason)
+                    return 0
+
                 day_start = daily_period_start(
                     now,
                     THREADS_PUBLISHING.daily_timezone,
@@ -123,6 +187,15 @@ def run_cycle(args: argparse.Namespace) -> int:
                 posted_today = database.published_threads_count_since(
                     day_start.isoformat()
                 )
+                if posted_today > THREADS_PUBLISHING.daily_post_limit:
+                    controller.evaluate(
+                        new_controller_evaluation_id(),
+                        now=now,
+                        global_safety_error="Posting limit violation",
+                        halt_class=HaltClass.MANUAL_REVIEW_REQUIRED,
+                    )
+                    LOGGER.critical("Post blocked reason=posting_limit_violation")
+                    return 1
                 if posted_today >= THREADS_PUBLISHING.daily_post_limit:
                     LOGGER.info(
                         "Post skipped reason=daily_limit posted_count=%d limit=%d timezone=%s",
@@ -132,10 +205,28 @@ def run_cycle(args: argparse.Namespace) -> int:
                     )
                     return 0
 
+                cycle_id = str(uuid.uuid4())
+                assigned_arm, assignment_key = stable_arm_assignment(
+                    state.experiment_epoch, cycle_id, state.execution_state
+                )
+                selector_used = "CONTROL"
+                formal_experiment = state.execution_state in (
+                    ExecutionState.LIMITED_LIVE,
+                    ExecutionState.ADAPTIVE_LIVE,
+                ) and not args.dry_run
+                if policy.force_control:
+                    assigned_arm = ExperimentArm.CONTROL
+                    formal_experiment = False
+                elif assigned_arm == ExperimentArm.OPTIMIZER:
+                    state = controller.evaluate(
+                        new_controller_evaluation_id(),
+                        now=now,
+                        optimizer_error="Optimizer selector is unavailable",
+                    )
+                    selector_used = "FALLBACK_CONTROL"
+                    formal_experiment = False
                 candidates = find_publishable_candidates(
-                    database,
-                    THREADS_PUBLISHING,
-                    now,
+                    database, THREADS_PUBLISHING, now
                 )
                 LOGGER.info("Candidates selected candidate_count=%d", len(candidates))
                 if not candidates:
@@ -143,6 +234,31 @@ def run_cycle(args: argparse.Namespace) -> int:
                     return 0
 
                 candidate = candidates[0]
+                try:
+                    validate_publish_payload(
+                        candidate.text, candidate.product.affiliate_url
+                    )
+                except StateValidationError as error:
+                    controller.evaluate(
+                        new_controller_evaluation_id(),
+                        now=now,
+                        global_safety_error=str(error),
+                        halt_class=HaltClass.MANUAL_REVIEW_REQUIRED,
+                    )
+                    LOGGER.critical("Post blocked reason=payload_safety_validation")
+                    return 1
+                record_experiment_assignment(
+                    database.connection,
+                    cycle_id=cycle_id,
+                    state=state,
+                    arm=assigned_arm,
+                    assignment_key=assignment_key,
+                    assigned_at=now,
+                    selector_used=selector_used,
+                    selected_item_code=candidate.product.item_code,
+                    candidate_score=candidate.deal_score,
+                    formal_override=formal_experiment,
+                )
                 LOGGER.info(
                     "Post target item_code=%s deal_score=%.2f",
                     candidate.product.item_code,
@@ -162,6 +278,7 @@ def run_cycle(args: argparse.Namespace) -> int:
                     return 0
 
                 try:
+                    record_publish_result(database.connection, cycle_id, "attempting")
                     token = load_threads_access_token()
                     with ThreadsPublisher(token) as publisher:
                         post_id = publisher.publish_text(
@@ -182,7 +299,11 @@ def run_cycle(args: argparse.Namespace) -> int:
                         tip_id=candidate.tip_id,
                         content_trigger=candidate.content_trigger,
                         search_keyword=candidate.search_keyword,
+                        experiment_arm=assigned_arm.value,
+                        assignment_key=assignment_key,
+                        experiment_epoch=state.experiment_epoch,
                     )
+                    record_publish_result(database.connection, cycle_id, "failed")
                     LOGGER.error(
                         "Threads publish failed item_code=%s error=%s",
                         candidate.product.item_code,
@@ -203,7 +324,11 @@ def run_cycle(args: argparse.Namespace) -> int:
                     tip_id=candidate.tip_id,
                     content_trigger=candidate.content_trigger,
                     search_keyword=candidate.search_keyword,
+                    experiment_arm=assigned_arm.value,
+                    assignment_key=assignment_key,
+                    experiment_epoch=state.experiment_epoch,
                 )
+                record_publish_result(database.connection, cycle_id, "published")
                 LOGGER.info(
                     "Threads publish succeeded item_code=%s deal_score=%.2f post_id=%s",
                     candidate.product.item_code,

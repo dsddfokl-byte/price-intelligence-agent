@@ -20,6 +20,17 @@ from app.config import (  # noqa: E402
     load_settings,
     load_threads_access_token,
 )
+from app.autopilot import (  # noqa: E402
+    AutopilotController,
+    HaltClass,
+    StateValidationError,
+    get_state,
+    emergency_safe_halt,
+    new_controller_evaluation_id,
+    runtime_policy,
+    system_health_errors,
+    validate_publish_payload,
+)
 from app.database import Database  # noqa: E402
 from app.init import initialize_database  # noqa: E402
 from app.publishers.threads import (  # noqa: E402
@@ -68,6 +79,28 @@ def main() -> int:
     now = datetime.now(timezone.utc)
     with Database(settings.database_path) as database:
         initialize_database(database)
+        try:
+            state = get_state(database.connection)
+        except StateValidationError:
+            state = emergency_safe_halt(
+                database.connection,
+                new_controller_evaluation_id(),
+                "State machine corruption",
+                now=now,
+            )
+        health_errors = system_health_errors(
+            database.connection, now, THREADS_PUBLISHING.daily_post_limit
+        )
+        if health_errors:
+            state = AutopilotController(database.connection).evaluate(
+                new_controller_evaluation_id(),
+                now=now,
+                global_safety_error="; ".join(health_errors),
+                halt_class=HaltClass.MANUAL_REVIEW_REQUIRED,
+            )
+        if runtime_policy(state).halt_publish:
+            print("SAFE_HALTまたはruntime kill switchにより投稿を停止しました。", file=sys.stderr)
+            return 1
         row = database.product_for_threads(args.item_code)
         if row is None:
             print("指定されたitem_codeの商品はDBに存在しません。", file=sys.stderr)
@@ -83,6 +116,18 @@ def main() -> int:
         candidate, reason = evaluate_product(database, row, now=now)
         if candidate is None:
             print(f"投稿条件を満たしません: {reason}", file=sys.stderr)
+            return 1
+
+        try:
+            validate_publish_payload(candidate.text, candidate.product.affiliate_url)
+        except StateValidationError as error:
+            AutopilotController(database.connection).evaluate(
+                new_controller_evaluation_id(),
+                now=now,
+                global_safety_error=str(error),
+                halt_class=HaltClass.MANUAL_REVIEW_REQUIRED,
+            )
+            print("安全性検証に失敗したためSAFE_HALTへ移行しました。", file=sys.stderr)
             return 1
 
         try:

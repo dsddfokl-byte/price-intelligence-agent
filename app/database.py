@@ -70,6 +70,15 @@ CREATE TABLE IF NOT EXISTS threads_posts (
     tip_id TEXT,
     content_trigger TEXT,
     search_keyword TEXT,
+    experiment_arm TEXT,
+    assignment_key TEXT,
+    experiment_epoch TEXT,
+    clicks INTEGER,
+    pending_orders INTEGER,
+    pending_commission REAL,
+    confirmed_orders INTEGER,
+    confirmed_commission REAL,
+    outcome_status TEXT,
     FOREIGN KEY(item_code) REFERENCES products(item_code)
 );
 
@@ -87,7 +96,86 @@ CREATE INDEX IF NOT EXISTS idx_threads_posts_posted_at
     ON threads_posts(posted_at);
 CREATE INDEX IF NOT EXISTS idx_product_keywords_keyword
     ON product_keywords(keyword);
+
+CREATE TABLE IF NOT EXISTS autopilot_state (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    execution_state TEXT NOT NULL,
+    reward_mode TEXT NOT NULL,
+    experiment_epoch TEXT NOT NULL,
+    optimizer_model_version TEXT NOT NULL,
+    controller_version TEXT NOT NULL,
+    scoring_formula_version TEXT NOT NULL,
+    experiment_policy_version TEXT NOT NULL,
+    revenue_data_ready INTEGER NOT NULL DEFAULT 0,
+    safe_halt_reason TEXT,
+    safe_halt_class TEXT,
+    manual_clear_required INTEGER NOT NULL DEFAULT 0,
+    health_success_count INTEGER NOT NULL DEFAULT 0,
+    healthy_since TEXT,
+    promotion_success_count INTEGER NOT NULL DEFAULT 0,
+    last_promotion_eval_at TEXT,
+    state_entered_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS experiment_cycles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cycle_id TEXT NOT NULL UNIQUE,
+    experiment_epoch TEXT NOT NULL,
+    experiment_arm TEXT NOT NULL,
+    assignment_key TEXT NOT NULL,
+    reward_mode TEXT NOT NULL,
+    assigned_at TEXT NOT NULL,
+    selector_used TEXT,
+    selected_item_code TEXT,
+    candidate_score REAL,
+    decision TEXT,
+    publish_attempted INTEGER NOT NULL DEFAULT 0,
+    publish_status TEXT,
+    is_formal_experiment INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS controller_evaluations (
+    controller_evaluation_id TEXT PRIMARY KEY,
+    evaluated_at TEXT NOT NULL,
+    result_execution_state TEXT NOT NULL,
+    result_reward_mode TEXT NOT NULL,
+    experiment_epoch TEXT NOT NULL,
+    reason TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS autopilot_transitions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    controller_evaluation_id TEXT NOT NULL UNIQUE,
+    occurred_at TEXT NOT NULL,
+    from_execution_state TEXT NOT NULL,
+    to_execution_state TEXT NOT NULL,
+    from_reward_mode TEXT NOT NULL,
+    to_reward_mode TEXT NOT NULL,
+    experiment_epoch TEXT NOT NULL,
+    reason TEXT NOT NULL,
+    FOREIGN KEY(controller_evaluation_id)
+        REFERENCES controller_evaluations(controller_evaluation_id)
+);
+
+INSERT OR IGNORE INTO autopilot_state (
+    id, execution_state, reward_mode, experiment_epoch,
+    optimizer_model_version, controller_version, scoring_formula_version,
+    experiment_policy_version, revenue_data_ready, state_entered_at, updated_at
+) VALUES (
+    1, 'SHADOW', 'ENGAGEMENT_PROXY', 'epoch-initial-v1',
+    'optimizer-v1', 'controller-v1', 'scoring-v1',
+    'policy-v1', 0, datetime('now'), datetime('now')
+);
+
+CREATE INDEX IF NOT EXISTS idx_experiment_cycles_epoch_arm
+    ON experiment_cycles(experiment_epoch, experiment_arm);
 """
+
+EXPERIMENT_CYCLES_MIGRATION_COLUMNS = {
+    "candidate_score": "REAL",
+    "decision": "TEXT",
+}
 
 PRODUCT_MIGRATION_COLUMNS = {
     "point_rate": "INTEGER",
@@ -111,6 +199,20 @@ THREADS_INSIGHTS_MIGRATION_COLUMNS = {
     "tip_id": "TEXT",
     "content_trigger": "TEXT",
     "search_keyword": "TEXT",
+    "experiment_arm": "TEXT",
+    "assignment_key": "TEXT",
+    "experiment_epoch": "TEXT",
+    "clicks": "INTEGER",
+    "pending_orders": "INTEGER",
+    "pending_commission": "REAL",
+    "confirmed_orders": "INTEGER",
+    "confirmed_commission": "REAL",
+    "outcome_status": "TEXT",
+}
+
+AUTOPILOT_STATE_MIGRATION_COLUMNS = {
+    "promotion_success_count": "INTEGER NOT NULL DEFAULT 0",
+    "last_promotion_eval_at": "TEXT",
 }
 
 
@@ -136,6 +238,8 @@ class Database:
             self.connection.executescript(SCHEMA)
             self._ensure_columns("products", PRODUCT_MIGRATION_COLUMNS)
             self._ensure_columns("threads_posts", THREADS_INSIGHTS_MIGRATION_COLUMNS)
+            self._ensure_columns("autopilot_state", AUTOPILOT_STATE_MIGRATION_COLUMNS)
+            self._ensure_columns("experiment_cycles", EXPERIMENT_CYCLES_MIGRATION_COLUMNS)
 
     def _ensure_columns(self, table: str, columns: dict) -> None:
         existing = {
@@ -423,6 +527,9 @@ class Database:
         tip_id: Optional[str] = None,
         content_trigger: Optional[str] = None,
         search_keyword: Optional[str] = None,
+        experiment_arm: Optional[str] = None,
+        assignment_key: Optional[str] = None,
+        experiment_epoch: Optional[str] = None,
     ) -> None:
         with self.connection:
             self.connection.execute(
@@ -430,8 +537,9 @@ class Database:
                 INSERT INTO threads_posts(
                     item_code, threads_post_id, posted_at, deal_score,
                     price, text_hash, status, error, topic_tag,
-                    template_variant, tip_id, content_trigger, search_keyword
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    template_variant, tip_id, content_trigger, search_keyword,
+                    experiment_arm, assignment_key, experiment_epoch
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     item_code,
@@ -447,5 +555,8 @@ class Database:
                     tip_id,
                     content_trigger,
                     search_keyword,
+                    experiment_arm,
+                    assignment_key,
+                    experiment_epoch,
                 ),
             )
