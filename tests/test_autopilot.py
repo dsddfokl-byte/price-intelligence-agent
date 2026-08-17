@@ -28,6 +28,7 @@ from app.autopilot import (
     outcome_status,
     runtime_policy,
     stable_arm_assignment,
+    validate_publish_payload,
     validate_state_combination,
 )
 from app.database import Database
@@ -46,6 +47,13 @@ class AutopilotTests(unittest.TestCase):
     def tearDown(self) -> None:
         self.database.close()
         self.temp.cleanup()
+
+    def test_publish_validation_requires_disclosure_but_not_pr_label(self) -> None:
+        url = "https://example.invalid/affiliate"
+        text = f"🐾 商品価格チェック\n{url}\n※本投稿にはアフィリエイトリンクが含まれます。"
+        validate_publish_payload(text, url)
+        with self.assertRaises(StateValidationError):
+            validate_publish_payload(f"🐾 商品価格チェック\n{url}", url)
 
     def _set_state(
         self,

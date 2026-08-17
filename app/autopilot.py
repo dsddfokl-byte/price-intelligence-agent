@@ -465,8 +465,9 @@ def record_publish_result(
 
 
 def validate_publish_payload(text: str, affiliate_url: Optional[str]) -> None:
-    if "【PR】" not in text or "アフィリエイトリンクが含まれます" not in text:
-        raise StateValidationError("PR disclosure validation failure")
+    disclosure = "※本投稿にはアフィリエイトリンクが含まれます。"
+    if disclosure not in text:
+        raise StateValidationError("Affiliate disclosure validation failure")
     if not affiliate_url or affiliate_url not in text:
         raise StateValidationError("Affiliate URL validation failure")
     if len(text) > 500:

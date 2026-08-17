@@ -336,6 +336,7 @@ def generate_post_text(
     product: Product,
     deal_score: float,
     maximum_length: int = THREADS_PUBLISHING.maximum_text_length,
+    requires_pr_label: bool = False,
 ) -> str:
     try:
         return generate_experiment_text(
@@ -346,6 +347,7 @@ def generate_post_text(
             None,
             None,
             maximum_length,
+            requires_pr_label,
         )
     except ValueError as error:
         raise ThreadsPostError(str(error)) from None

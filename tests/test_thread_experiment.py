@@ -100,11 +100,33 @@ class ThreadExperimentTests(unittest.TestCase):
             )
             self.assertLessEqual(len(text), 500)
             self.assertIn(URL, text)
-            self.assertIn("【PR】", text)
+            self.assertNotIn("【PR】", text)
             self.assertIn("確認時価格", text)
-            self.assertIn("アフィリエイトリンク", text)
+            self.assertTrue(
+                text.endswith("※本投稿にはアフィリエイトリンクが含まれます。")
+            )
             for phrase in FORBIDDEN:
                 self.assertNotIn(phrase, text)
+
+    def test_pr_label_is_explicitly_opt_in_for_both_templates(self) -> None:
+        tip = next(item for item in load_owner_tips() if item.category == "猫砂")
+        for variant, selected_tip in ((PRICE_CONTROL, None), (OWNER_VALUE, tip)):
+            normal = generate_experiment_text(
+                product(), 76.7, "猫砂", variant, selected_tip, None,
+                requires_pr_label=False,
+            )
+            labelled = generate_experiment_text(
+                product(), 76.7, "猫砂", variant, selected_tip, None,
+                requires_pr_label=True,
+            )
+            self.assertFalse(normal.startswith("【PR】"))
+            self.assertTrue(labelled.startswith("【PR】"))
+            for text in (normal, labelled):
+                self.assertIn(URL, text)
+                self.assertTrue(
+                    text.endswith("※本投稿にはアフィリエイトリンクが含まれます。")
+                )
+                self.assertLessEqual(len(text), 500)
 
     def test_trigger_uses_only_product_data(self) -> None:
         self.assertEqual(build_content_trigger(product(), 2200), "前回チェックより10.0%下落")

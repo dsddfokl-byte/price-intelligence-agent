@@ -136,6 +136,7 @@ def generate_experiment_text(
     tip: Optional[OwnerTip],
     content_trigger: Optional[str],
     maximum_length: int = THREADS_PUBLISHING.maximum_text_length,
+    requires_pr_label: bool = False,
 ) -> str:
     if not product.affiliate_url:
         raise ValueError("Affiliate URL is required")
@@ -154,11 +155,12 @@ def generate_experiment_text(
             review += f" / {product.review_count:,}件"
     trigger_line = _format_trigger(content_trigger)
     tip_text = tip.text if tip else ""
+    pr_label = "【PR】" if requires_pr_label else ""
 
     def render(display_title: str, utility: str, review_line: str) -> str:
         if variant == PRICE_CONTROL:
             body = (
-                f"【PR】{emoji} 今日の{label}用品価格チェック\n\n"
+                f"{pr_label}{emoji} 今日の{label}用品価格チェック\n\n"
                 f"{trigger_line}{display_title}\n"
                 f"確認時価格：{price}\n\n"
                 f"{review_line}\n"
@@ -166,7 +168,7 @@ def generate_experiment_text(
             )
         else:
             body = (
-                f"【PR】{emoji} 30秒{label}メモ\n\n"
+                f"{pr_label}{emoji} 30秒{label}メモ\n\n"
                 f"{utility}\n\n"
                 f"{trigger_line}今日チェックした商品\n"
                 f"{display_title}\n\n"
