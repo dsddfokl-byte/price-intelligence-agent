@@ -29,6 +29,7 @@ COMIC_MEDIA_HOSTING_PROVIDER = "disabled"
 COMIC_GITHUB_PAGES_BASE_URL = (
     "https://dsddfokl-byte.github.io/price-intelligence-agent"
 )
+COMIC_GITHUB_PAGES_ASSET_PREFIX = "assets/comics/v1"
 THREADS_API_BASE_URL = "https://graph.threads.net/v1.0"
 THREADS_USERNAME = "kaidoki_radar_"
 THREADS_TOPIC_TAGS = {

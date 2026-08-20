@@ -2,6 +2,7 @@
 
 import hashlib
 import ipaddress
+import re
 import socket
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -13,6 +14,7 @@ import requests
 
 from app.config import (
     COMIC_GITHUB_PAGES_BASE_URL,
+    COMIC_GITHUB_PAGES_ASSET_PREFIX,
     COMIC_MEDIA_HOSTING_PROVIDER,
     PROJECT_ROOT,
     REQUEST_TIMEOUT,
@@ -189,20 +191,24 @@ class GitHubPagesComicMediaHostingProvider(ComicMediaHostingProvider):
     def __init__(self, base_url: str = COMIC_GITHUB_PAGES_BASE_URL) -> None:
         self.base_url = base_url.rstrip("/")
 
+    def expected_public_url(self, comic_id: str) -> str:
+        if not re.fullmatch(r"comic_\d{3}", comic_id):
+            raise MediaHostingError("Invalid comic_id for GitHub Pages")
+        prefix = COMIC_GITHUB_PAGES_ASSET_PREFIX.strip("/")
+        return f"{self.base_url}/{prefix}/{quote(comic_id)}.png"
+
     def publish_asset(
         self, local_path: str, comic_id: str, sha256: str
     ) -> HostedComicAsset:
         path = Path(local_path).resolve()
         try:
-            relative = path.relative_to(PROJECT_ROOT)
+            path.relative_to(PROJECT_ROOT)
         except ValueError as error:
             raise MediaHostingError("Comic path is outside the project") from error
         local_hash = hashlib.sha256(path.read_bytes()).hexdigest()
         if local_hash != sha256:
             raise MediaHostingError(MEDIA_HASH_MISMATCH)
-        public_url = self.base_url + "/" + "/".join(
-            quote(part) for part in relative.parts
-        )
+        public_url = self.expected_public_url(comic_id)
         validation = validate_public_media_url(
             public_url, expected_sha256=sha256
         )

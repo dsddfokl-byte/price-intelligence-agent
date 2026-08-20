@@ -11,6 +11,7 @@ from app.comics.media_hosting import (
     MEDIA_HOSTING_NOT_CONFIGURED,
     DisabledComicMediaHostingProvider,
     HostedComicAsset,
+    GitHubPagesComicMediaHostingProvider,
     MediaHostingError,
     detect_existing_media_hosting,
     validate_public_media_url,
@@ -32,6 +33,17 @@ class ComicMediaHostingTests(unittest.TestCase):
         detection = detect_existing_media_hosting()
         self.assertTrue(detection.found)
         self.assertEqual(detection.provider, "github_pages")
+
+    def test_github_pages_url_resolution_is_deterministic_and_safe(self) -> None:
+        provider = GitHubPagesComicMediaHostingProvider()
+        expected = (
+            "https://dsddfokl-byte.github.io/price-intelligence-agent/"
+            "assets/comics/v1/comic_001.png"
+        )
+        self.assertEqual(provider.expected_public_url("comic_001"), expected)
+        self.assertEqual(provider.expected_public_url("comic_001"), expected)
+        with self.assertRaises(MediaHostingError):
+            provider.expected_public_url("../comic_001")
 
     def test_rejects_local_file_http_and_private_hosts(self) -> None:
         for url in (
