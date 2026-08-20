@@ -25,6 +25,10 @@ COMIC_REUSE_COOLDOWN_DAYS = 30
 COMIC_STOCK_EXPERIMENT_SALT = "comic_stock_experiment_v1"
 COMIC_MEDIA_BASE_URL = None
 COMIC_MEDIA_HOSTING_STATUS = "MEDIA_HOSTING_NOT_CONFIGURED"
+COMIC_MEDIA_HOSTING_PROVIDER = "disabled"
+COMIC_GITHUB_PAGES_BASE_URL = (
+    "https://dsddfokl-byte.github.io/price-intelligence-agent"
+)
 THREADS_API_BASE_URL = "https://graph.threads.net/v1.0"
 THREADS_USERNAME = "kaidoki_radar_"
 THREADS_TOPIC_TAGS = {

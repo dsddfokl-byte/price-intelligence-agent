@@ -154,7 +154,10 @@ class ComicStockTests(unittest.TestCase):
         publisher._request = Mock(return_value={"id": "creation-id"})
         self.assertEqual(
             publisher.create_image_container(
-                "safe text", "https://example.invalid/comic.png", "猫"
+                "safe text",
+                "https://example.invalid/comic.png",
+                "猫と犬の日常を描いた縦4コマ漫画",
+                "猫",
             ),
             "creation-id",
         )
@@ -164,6 +167,7 @@ class ComicStockTests(unittest.TestCase):
                 "media_type": "IMAGE",
                 "image_url": "https://example.invalid/comic.png",
                 "text": "safe text",
+                "alt_text": "猫と犬の日常を描いた縦4コマ漫画",
                 "topic_tag": "猫",
             },
         )

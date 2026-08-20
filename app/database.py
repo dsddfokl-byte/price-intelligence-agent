@@ -84,6 +84,9 @@ CREATE TABLE IF NOT EXISTS threads_posts (
     comic_stock_version TEXT,
     assigned_media_variant TEXT,
     delivered_media_variant TEXT,
+    media_url TEXT,
+    media_url_expires_at TEXT,
+    media_hosting_provider TEXT,
     FOREIGN KEY(item_code) REFERENCES products(item_code)
 );
 
@@ -307,6 +310,9 @@ THREADS_INSIGHTS_MIGRATION_COLUMNS = {
     "comic_stock_version": "TEXT",
     "assigned_media_variant": "TEXT",
     "delivered_media_variant": "TEXT",
+    "media_url": "TEXT",
+    "media_url_expires_at": "TEXT",
+    "media_hosting_provider": "TEXT",
 }
 
 AUTOPILOT_STATE_MIGRATION_COLUMNS = {
@@ -655,6 +661,9 @@ class Database:
         comic_stock_version: Optional[str] = None,
         assigned_media_variant: Optional[str] = None,
         delivered_media_variant: Optional[str] = None,
+        media_url: Optional[str] = None,
+        media_url_expires_at: Optional[str] = None,
+        media_hosting_provider: Optional[str] = None,
     ) -> None:
         with self.connection:
             self.connection.execute(
@@ -665,8 +674,9 @@ class Database:
                     template_variant, tip_id, content_trigger, search_keyword,
                     experiment_arm, assignment_key, experiment_epoch,
                     comic_id, comic_file, comic_stock_version,
-                    assigned_media_variant, delivered_media_variant
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    assigned_media_variant, delivered_media_variant,
+                    media_url, media_url_expires_at, media_hosting_provider
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     item_code,
@@ -690,6 +700,9 @@ class Database:
                     comic_stock_version,
                     assigned_media_variant,
                     delivered_media_variant,
+                    media_url,
+                    media_url_expires_at,
+                    media_hosting_provider,
                 ),
             )
 
