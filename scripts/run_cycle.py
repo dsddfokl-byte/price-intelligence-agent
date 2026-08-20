@@ -17,6 +17,9 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from app.collector import collect_products, load_search_terms  # noqa: E402
+from app.comic_cycle import build_comic_plan, publish_with_comic_plan  # noqa: E402
+from app.comics.media_publisher import ComicThreadsPublisher  # noqa: E402
+from app.comics.stock_selector import COMIC, ComicUsageRecord  # noqa: E402
 from app.autopilot import (  # noqa: E402
     AutopilotController,
     ExecutionState,
@@ -35,6 +38,7 @@ from app.autopilot import (  # noqa: E402
 )
 from app.config import (  # noqa: E402
     AUTOMATION_LOG_PATH,
+    COMIC_MEDIA_EXPERIMENT_EPOCH,
     ConfigurationError,
     RUN_CYCLE_LOCK_PATH,
     SEARCH_TERMS_PATH,
@@ -46,7 +50,7 @@ from app.database import Database  # noqa: E402
 from app.init import initialize_database  # noqa: E402
 from app.publishers.threads import (  # noqa: E402
     ThreadsAPIError,
-    ThreadsPublisher,
+    ThreadsPostError,
     daily_period_start,
     find_eligible_candidates,
 )
@@ -318,6 +322,20 @@ def run_cycle(args: argparse.Namespace) -> int:
                     candidate.product.item_code,
                     candidate.deal_score,
                 )
+                usages = tuple(
+                    ComicUsageRecord(
+                        comic_id=row["comic_id"],
+                        item_code=row["item_code"],
+                        category=row["category"],
+                        selected_at=datetime.fromisoformat(row["selected_at"]),
+                        published_at=(
+                            datetime.fromisoformat(row["published_at"])
+                            if row["published_at"] else None
+                        ),
+                    )
+                    for row in database.comic_usage_rows()
+                )
+                comic_plan = build_comic_plan(candidate, now=now, usages=usages)
 
                 if args.dry_run:
                     LOGGER.info("Post skipped reason=dry_run")
@@ -345,17 +363,24 @@ def run_cycle(args: argparse.Namespace) -> int:
                     print(f"template_variant: {candidate.template_variant}")
                     print(f"tip_id: {candidate.tip_id or 'N/A'}")
                     print(f"content_trigger: {candidate.content_trigger or 'N/A'}")
+                    print(
+                        "assigned_media_variant: "
+                        f"{comic_plan.assigned_media_variant}"
+                    )
+                    print(f"comic_id: {comic_plan.selection.comic_id or 'N/A'}")
                     print(candidate.text)
                     return 0
 
                 try:
                     record_publish_result(database.connection, cycle_id, "attempting")
                     token = load_threads_access_token()
-                    with ThreadsPublisher(token) as publisher:
-                        post_id = publisher.publish_text(
-                            candidate.text, topic_tag=candidate.topic_tag
+                    with ComicThreadsPublisher(token) as publisher:
+                        media_outcome = publish_with_comic_plan(
+                            publisher, candidate, comic_plan
                         )
-                except (ConfigurationError, ThreadsAPIError) as error:
+                    post_id = media_outcome.post_id
+                except (ConfigurationError, ThreadsAPIError, ThreadsPostError) as error:
+                    selection = comic_plan.selection
                     database.record_threads_post(
                         item_code=candidate.product.item_code,
                         threads_post_id=None,
@@ -373,6 +398,14 @@ def run_cycle(args: argparse.Namespace) -> int:
                         experiment_arm=assigned_arm.value,
                         assignment_key=assignment_key,
                         experiment_epoch=state.experiment_epoch,
+                        comic_id=selection.comic_id,
+                        comic_file=(
+                            selection.file_path.name if selection.file_path else None
+                        ),
+                        comic_stock_version=selection.stock_version,
+                        assigned_media_variant=comic_plan.assigned_media_variant,
+                        delivered_media_variant="NO_COMIC",
+                        comic_media_experiment_epoch=COMIC_MEDIA_EXPERIMENT_EPOCH,
                     )
                     record_publish_result(database.connection, cycle_id, "failed")
                     LOGGER.error(
@@ -382,23 +415,62 @@ def run_cycle(args: argparse.Namespace) -> int:
                     )
                     return 1
 
-                database.record_threads_post(
-                    item_code=candidate.product.item_code,
-                    threads_post_id=post_id,
-                    posted_at=now.isoformat(),
-                    deal_score=candidate.deal_score,
-                    price=candidate.product.item_price,
-                    text_hash=candidate.text_hash,
-                    status="published",
-                    topic_tag=candidate.topic_tag,
-                    template_variant=candidate.template_variant,
-                    tip_id=candidate.tip_id,
-                    content_trigger=candidate.content_trigger,
-                    search_keyword=candidate.search_keyword,
-                    experiment_arm=assigned_arm.value,
-                    assignment_key=assignment_key,
-                    experiment_epoch=state.experiment_epoch,
-                )
+                selection = media_outcome.selection
+                if media_outcome.delivered_media_variant == COMIC:
+                    assert selection.comic_id and selection.file_path
+                    assert media_outcome.hosted is not None
+                    database.record_published_comic_post(
+                        item_code=candidate.product.item_code,
+                        threads_post_id=post_id,
+                        posted_at=now.isoformat(),
+                        deal_score=candidate.deal_score,
+                        price=candidate.product.item_price,
+                        text_hash=candidate.text_hash,
+                        topic_tag=candidate.topic_tag,
+                        template_variant=candidate.template_variant,
+                        tip_id=candidate.tip_id,
+                        content_trigger=candidate.content_trigger,
+                        search_keyword=candidate.search_keyword,
+                        comic_id=selection.comic_id,
+                        comic_file=selection.file_path.name,
+                        comic_stock_version=selection.stock_version,
+                        media_url=media_outcome.hosted.public_url,
+                        media_hosting_provider=media_outcome.hosted.provider,
+                        selected_at=now.isoformat(),
+                        selection_score=selection.selection_score,
+                        selection_reason=selection.selection_reason,
+                        experiment_arm=assigned_arm.value,
+                        assignment_key=assignment_key,
+                        experiment_epoch=state.experiment_epoch,
+                        comic_media_experiment_epoch=COMIC_MEDIA_EXPERIMENT_EPOCH,
+                    )
+                else:
+                    database.record_threads_post(
+                        item_code=candidate.product.item_code,
+                        threads_post_id=post_id,
+                        posted_at=now.isoformat(),
+                        deal_score=candidate.deal_score,
+                        price=candidate.product.item_price,
+                        text_hash=candidate.text_hash,
+                        status="published",
+                        topic_tag=candidate.topic_tag,
+                        template_variant=candidate.template_variant,
+                        tip_id=candidate.tip_id,
+                        content_trigger=candidate.content_trigger,
+                        search_keyword=candidate.search_keyword,
+                        experiment_arm=assigned_arm.value,
+                        assignment_key=assignment_key,
+                        experiment_epoch=state.experiment_epoch,
+                        comic_id=selection.comic_id,
+                        comic_file=(
+                            selection.file_path.name if selection.file_path else None
+                        ),
+                        comic_stock_version=selection.stock_version,
+                        assigned_media_variant=media_outcome.assigned_media_variant,
+                        delivered_media_variant=media_outcome.delivered_media_variant,
+                        comic_media_experiment_epoch=COMIC_MEDIA_EXPERIMENT_EPOCH,
+                        comic_fallback_reason=media_outcome.fallback_reason,
+                    )
                 record_publish_result(database.connection, cycle_id, "published")
                 LOGGER.info(
                     "Threads publish succeeded item_code=%s deal_score=%.2f post_id=%s",

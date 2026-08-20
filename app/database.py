@@ -87,6 +87,8 @@ CREATE TABLE IF NOT EXISTS threads_posts (
     media_url TEXT,
     media_url_expires_at TEXT,
     media_hosting_provider TEXT,
+    comic_media_experiment_epoch TEXT,
+    comic_fallback_reason TEXT,
     FOREIGN KEY(item_code) REFERENCES products(item_code)
 );
 
@@ -260,7 +262,8 @@ CREATE TABLE IF NOT EXISTS comic_usage (
     assigned TEXT NOT NULL,
     delivered TEXT NOT NULL,
     selection_score REAL NOT NULL,
-    selection_reason TEXT NOT NULL
+    selection_reason TEXT NOT NULL,
+    comic_media_experiment_epoch TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_comic_usage_comic_selected
@@ -272,6 +275,10 @@ CREATE INDEX IF NOT EXISTS idx_comic_usage_item
 EXPERIMENT_CYCLES_MIGRATION_COLUMNS = {
     "candidate_score": "REAL",
     "decision": "TEXT",
+}
+
+COMIC_USAGE_MIGRATION_COLUMNS = {
+    "comic_media_experiment_epoch": "TEXT",
 }
 
 PRODUCT_MIGRATION_COLUMNS = {
@@ -313,6 +320,8 @@ THREADS_INSIGHTS_MIGRATION_COLUMNS = {
     "media_url": "TEXT",
     "media_url_expires_at": "TEXT",
     "media_hosting_provider": "TEXT",
+    "comic_media_experiment_epoch": "TEXT",
+    "comic_fallback_reason": "TEXT",
 }
 
 AUTOPILOT_STATE_MIGRATION_COLUMNS = {
@@ -343,6 +352,7 @@ class Database:
             self.connection.executescript(SCHEMA)
             self._ensure_columns("products", PRODUCT_MIGRATION_COLUMNS)
             self._ensure_columns("threads_posts", THREADS_INSIGHTS_MIGRATION_COLUMNS)
+            self._ensure_columns("comic_usage", COMIC_USAGE_MIGRATION_COLUMNS)
             self._ensure_columns("autopilot_state", AUTOPILOT_STATE_MIGRATION_COLUMNS)
             self._ensure_columns("experiment_cycles", EXPERIMENT_CYCLES_MIGRATION_COLUMNS)
 
@@ -664,6 +674,8 @@ class Database:
         media_url: Optional[str] = None,
         media_url_expires_at: Optional[str] = None,
         media_hosting_provider: Optional[str] = None,
+        comic_media_experiment_epoch: Optional[str] = None,
+        comic_fallback_reason: Optional[str] = None,
     ) -> None:
         with self.connection:
             self.connection.execute(
@@ -675,8 +687,9 @@ class Database:
                     experiment_arm, assignment_key, experiment_epoch,
                     comic_id, comic_file, comic_stock_version,
                     assigned_media_variant, delivered_media_variant,
-                    media_url, media_url_expires_at, media_hosting_provider
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    media_url, media_url_expires_at, media_hosting_provider,
+                    comic_media_experiment_epoch, comic_fallback_reason
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     item_code,
@@ -703,6 +716,8 @@ class Database:
                     media_url,
                     media_url_expires_at,
                     media_hosting_provider,
+                    comic_media_experiment_epoch,
+                    comic_fallback_reason,
                 ),
             )
 
@@ -724,6 +739,7 @@ class Database:
         delivered: str,
         selection_score: float,
         selection_reason: str,
+        comic_media_experiment_epoch: Optional[str] = None,
     ) -> None:
         with self.connection:
             self.connection.execute(
@@ -731,13 +747,14 @@ class Database:
                 INSERT INTO comic_usage(
                     comic_id, thread_post_id, item_code, category, selected_at,
                     published_at, assigned, delivered, selection_score,
-                    selection_reason
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    selection_reason, comic_media_experiment_epoch
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     comic_id, thread_post_id, item_code, category, selected_at,
                     published_at, assigned, delivered, selection_score,
                     selection_reason,
+                    comic_media_experiment_epoch,
                 ),
             )
 
@@ -763,6 +780,10 @@ class Database:
         selected_at: str,
         selection_score: float,
         selection_reason: str,
+        experiment_arm: Optional[str] = None,
+        assignment_key: Optional[str] = None,
+        experiment_epoch: Optional[str] = None,
+        comic_media_experiment_epoch: Optional[str] = None,
     ) -> None:
         """Atomically persist one successfully published comic post and usage."""
         with self.connection:
@@ -772,18 +793,22 @@ class Database:
                     item_code, threads_post_id, posted_at, deal_score,
                     price, text_hash, status, topic_tag, template_variant,
                     tip_id, content_trigger, search_keyword,
+                    experiment_arm, assignment_key, experiment_epoch,
                     comic_id, comic_file, comic_stock_version,
                     assigned_media_variant, delivered_media_variant,
-                    media_url, media_hosting_provider
-                ) VALUES (?, ?, ?, ?, ?, ?, 'published', ?, ?, ?, ?, ?, ?, ?, ?,
-                          'COMIC', 'COMIC', ?, ?)
+                    media_url, media_hosting_provider,
+                    comic_media_experiment_epoch
+                ) VALUES (?, ?, ?, ?, ?, ?, 'published', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                          'COMIC', 'COMIC', ?, ?, ?)
                 """,
                 (
                     item_code, threads_post_id, posted_at, deal_score,
                     price, text_hash, topic_tag, template_variant,
                     tip_id, content_trigger, search_keyword,
+                    experiment_arm, assignment_key, experiment_epoch,
                     comic_id, comic_file, comic_stock_version,
                     media_url, media_hosting_provider,
+                    comic_media_experiment_epoch,
                 ),
             )
             self.connection.execute(
@@ -791,11 +816,12 @@ class Database:
                 INSERT INTO comic_usage(
                     comic_id, thread_post_id, item_code, category, selected_at,
                     published_at, assigned, delivered, selection_score,
-                    selection_reason
-                ) VALUES (?, ?, ?, ?, ?, ?, 'COMIC', 'COMIC', ?, ?)
+                    selection_reason, comic_media_experiment_epoch
+                ) VALUES (?, ?, ?, ?, ?, ?, 'COMIC', 'COMIC', ?, ?, ?)
                 """,
                 (
                     comic_id, threads_post_id, item_code, search_keyword,
                     selected_at, posted_at, selection_score, selection_reason,
+                    comic_media_experiment_epoch,
                 ),
             )

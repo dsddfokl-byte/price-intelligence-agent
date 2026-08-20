@@ -57,7 +57,7 @@ class GitHubPagesAssetTests(unittest.TestCase):
         )
         self.assertTrue(all(url.startswith("https://") for url in urls))
         self.assertEqual(COMIC_MEDIA_HOSTING_PROVIDER, "github_pages")
-        self.assertFalse(COMIC_STOCK_PUBLISHING_ENABLED)
+        self.assertTrue(COMIC_STOCK_PUBLISHING_ENABLED)
 
 
 if __name__ == "__main__":

@@ -34,7 +34,7 @@ class ComicProductionPublishTests(unittest.TestCase):
         publisher.close()
         self.assertEqual(COMIC_PRODUCTION_TEST_LIMIT, 1)
         self.assertEqual(THREADS_PUBLISH_CALL_LIMIT, 1)
-        self.assertFalse(COMIC_STOCK_PUBLISHING_ENABLED)
+        self.assertTrue(COMIC_STOCK_PUBLISHING_ENABLED)
 
     def test_success_records_post_and_usage_atomically(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

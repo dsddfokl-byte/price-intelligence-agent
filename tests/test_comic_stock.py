@@ -185,7 +185,7 @@ class ComicStockTests(unittest.TestCase):
             self.assertEqual(state_before, state_after)
             database.close()
         self.assertTrue(COMIC_STOCK_ENABLED)
-        self.assertFalse(COMIC_STOCK_PUBLISHING_ENABLED)
+        self.assertTrue(COMIC_STOCK_PUBLISHING_ENABLED)
         self.assertEqual(THREADS_PUBLISHING.minimum_deal_score, 75)
         self.assertEqual(THREADS_PUBLISHING.daily_post_limit, 2)
 

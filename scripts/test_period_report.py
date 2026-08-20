@@ -13,7 +13,11 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from app.collector import load_search_terms  # noqa: E402
-from app.config import DATABASE_PATH, SEARCH_TERMS_PATH  # noqa: E402
+from app.config import (  # noqa: E402
+    COMIC_MEDIA_MIN_SAMPLE,
+    DATABASE_PATH,
+    SEARCH_TERMS_PATH,
+)
 from app.database import Database  # noqa: E402
 from app.init import initialize_database  # noqa: E402
 
@@ -33,6 +37,86 @@ def print_insight_group(label: str, rows: list) -> None:
         f"reposts={sum(number(row['reposts']) for row in rows)}, "
         f"quotes={sum(number(row['quotes']) for row in rows)}, "
         f"shares={sum(number(row['shares']) for row in rows)}"
+    )
+
+
+def nullable_average(value: object) -> str:
+    return "N/A" if value is None else f"{float(value):.2f}"
+
+
+def media_variant_rows(connection, since: str, column: str) -> list:
+    if column not in {"assigned_media_variant", "delivered_media_variant"}:
+        raise ValueError("Unsupported media variant dimension")
+    return connection.execute(
+        f"""
+        SELECT {column} AS media_variant, COUNT(*) AS published_count,
+               SUM(views) AS views_total, AVG(views) AS views_per_post,
+               AVG(likes) AS likes_per_post, AVG(replies) AS replies_per_post,
+               AVG(reposts) AS reposts_per_post, AVG(clicks) AS clicks_per_post,
+               AVG(confirmed_orders) AS orders_per_post,
+               AVG(confirmed_commission) AS commission_per_post
+        FROM threads_posts
+        WHERE status = 'published' AND posted_at >= ?
+          AND {column} IN ('COMIC', 'NO_COMIC')
+        GROUP BY {column}
+        """,
+        (since,),
+    ).fetchall()
+
+
+def print_media_variant_report(connection, since: str) -> None:
+    counts = {}
+    for label, column in (
+        ("ITT（assigned基準）", "assigned_media_variant"),
+        ("Delivered（配信実績基準）", "delivered_media_variant"),
+    ):
+        print(f"\nMedia Variant {label}")
+        rows = {row["media_variant"]: row for row in media_variant_rows(connection, since, column)}
+        for variant in ("COMIC", "NO_COMIC"):
+            row = rows.get(variant)
+            count = int(row["published_count"]) if row else 0
+            if column == "assigned_media_variant":
+                counts[variant] = count
+            print(
+                f"{variant}: published_count={count}, "
+                f"views_total={number(row['views_total']) if row else 0}, "
+                f"views/post={nullable_average(row['views_per_post']) if row else 'N/A'}, "
+                f"likes/post={nullable_average(row['likes_per_post']) if row else 'N/A'}, "
+                f"replies/post={nullable_average(row['replies_per_post']) if row else 'N/A'}, "
+                f"reposts/post={nullable_average(row['reposts_per_post']) if row else 'N/A'}, "
+                f"clicks/post={nullable_average(row['clicks_per_post']) if row else 'N/A'}, "
+                f"orders/post={nullable_average(row['orders_per_post']) if row else 'N/A'}, "
+                f"commission/post={nullable_average(row['commission_per_post']) if row else 'N/A'}"
+            )
+    readiness = (
+        "SAMPLE_READY"
+        if counts.get("COMIC", 0) >= COMIC_MEDIA_MIN_SAMPLE
+        and counts.get("NO_COMIC", 0) >= COMIC_MEDIA_MIN_SAMPLE
+        else "INSUFFICIENT_SAMPLE"
+    )
+    print(
+        f"Media experiment readiness: {readiness} "
+        f"(minimum={COMIC_MEDIA_MIN_SAMPLE}/arm)"
+    )
+    health = connection.execute(
+        """
+        SELECT
+          SUM(CASE WHEN assigned_media_variant='COMIC' THEN 1 ELSE 0 END) comic_assigned,
+          SUM(CASE WHEN delivered_media_variant='COMIC' THEN 1 ELSE 0 END) comic_delivered,
+          SUM(CASE WHEN assigned_media_variant='COMIC' AND delivered_media_variant='NO_COMIC' THEN 1 ELSE 0 END) comic_fallback,
+          SUM(CASE WHEN comic_fallback_reason='COMIC_SELECTION_FAILED' THEN 1 ELSE 0 END) selection_failures,
+          SUM(CASE WHEN comic_fallback_reason='COMIC_MEDIA_FAILED' THEN 1 ELSE 0 END) media_failures
+        FROM threads_posts WHERE status='published' AND posted_at >= ?
+        """,
+        (since,),
+    ).fetchone()
+    print(
+        "Comic health: "
+        f"assigned={number(health['comic_assigned'])}, "
+        f"delivered={number(health['comic_delivered'])}, "
+        f"fallback={number(health['comic_fallback'])}, "
+        f"selection_failure={number(health['selection_failures'])}, "
+        f"media_failure={number(health['media_failures'])}"
     )
 
 
@@ -97,6 +181,8 @@ def main() -> int:
                 variant,
                 [row for row in post_rows if row["template_variant"] == variant],
             )
+
+        print_media_variant_report(connection, since)
 
         print("\nTopic別")
         topics = sorted(
@@ -208,15 +294,13 @@ def main() -> int:
         if not comic_rows:
             print("配信済みcomic投稿なし")
         for row in comic_rows:
-            def nullable(value: object) -> str:
-                return "N/A" if value is None else f"{float(value):.2f}"
             print(
                 f"{row['comic_id']}: published={row['published_count']}, "
-                f"views/post={nullable(row['views_per_post'])}, "
-                f"replies/post={nullable(row['replies_per_post'])}, "
-                f"reposts/post={nullable(row['reposts_per_post'])}, "
-                f"clicks/post={nullable(row['clicks_per_post'])}, "
-                f"commission/post={nullable(row['commission_per_post'])}"
+                f"views/post={nullable_average(row['views_per_post'])}, "
+                f"replies/post={nullable_average(row['replies_per_post'])}, "
+                f"reposts/post={nullable_average(row['reposts_per_post'])}, "
+                f"clicks/post={nullable_average(row['clicks_per_post'])}, "
+                f"commission/post={nullable_average(row['commission_per_post'])}"
             )
     return 0
 
