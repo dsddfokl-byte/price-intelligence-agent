@@ -1,8 +1,11 @@
 """Media hosting, URL safety, integrity, and dry-run payload tests."""
 
 import hashlib
+import json
+import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from unittest.mock import Mock
 
 from app.comics.media_hosting import (
@@ -13,13 +16,21 @@ from app.comics.media_hosting import (
     HostedComicAsset,
     GitHubPagesComicMediaHostingProvider,
     MediaHostingError,
+    PUBLIC_COMIC_MANIFEST_INVALID,
+    PUBLIC_URL_OK,
+    configured_provider,
     detect_existing_media_hosting,
+    load_public_comic_manifest,
     validate_public_media_url,
+    validate_public_media_url_lightweight,
 )
 from app.comics.media_publisher import (
+    ComicThreadsPublisher,
     build_comic_alt_text,
     build_image_container_payload,
 )
+from app.config import THREADS_IMAGE_CONTAINER_TEST_ENABLED
+from scripts.preview_threads_image_post import CONTAINER_TEST_LIMIT
 
 
 def public_resolver(*_args, **_kwargs):
@@ -42,8 +53,22 @@ class ComicMediaHostingTests(unittest.TestCase):
         )
         self.assertEqual(provider.expected_public_url("comic_001"), expected)
         self.assertEqual(provider.expected_public_url("comic_001"), expected)
+        self.assertTrue(
+            provider.expected_public_url("comic_050").endswith("/comic_050.png")
+        )
+        self.assertIsInstance(configured_provider(), GitHubPagesComicMediaHostingProvider)
         with self.assertRaises(MediaHostingError):
             provider.expected_public_url("../comic_001")
+
+    def test_public_manifest_is_primary_and_invalid_manifest_is_rejected(self) -> None:
+        assets = load_public_comic_manifest()
+        self.assertEqual(len(assets), 50)
+        self.assertRegex(assets["comic_001"].sha256, r"^[0-9a-f]{64}$")
+        with tempfile.TemporaryDirectory() as directory:
+            invalid = Path(directory) / "manifest.json"
+            invalid.write_text(json.dumps({"base_url": "https://example.com", "items": []}))
+            with self.assertRaisesRegex(MediaHostingError, PUBLIC_COMIC_MANIFEST_INVALID):
+                load_public_comic_manifest(invalid)
 
     def test_rejects_local_file_http_and_private_hosts(self) -> None:
         for url in (
@@ -92,6 +117,28 @@ class ComicMediaHostingTests(unittest.TestCase):
                 resolver=public_resolver,
             )
 
+    def test_lightweight_validation_does_not_download_body(self) -> None:
+        response = self.response(b"body-not-read")
+        response.url = "https://media.example.com/comic.png"
+        response.headers["Content-Length"] = "123"
+        session = Mock()
+        session.get.return_value = response
+        result = validate_public_media_url_lightweight(
+            "https://media.example.com/comic.png",
+            session=session,
+            resolver=public_resolver,
+        )
+        self.assertEqual(result.integrity_status, PUBLIC_URL_OK)
+        self.assertEqual(result.content_length, 123)
+        self.assertEqual(result.sha256, "")
+        session.get.assert_called_once_with(
+            "https://media.example.com/comic.png",
+            timeout=30,
+            allow_redirects=True,
+            stream=True,
+        )
+        response.close.assert_called_once()
+
     def test_redirect_loop_and_private_redirect_are_rejected(self) -> None:
         redirect = Mock()
         redirect.status_code = 302
@@ -138,6 +185,27 @@ class ComicMediaHostingTests(unittest.TestCase):
         self.assertIn("affiliate", payload["text"])
         self.assertIn("アフィリエイトリンク", payload["text"])
         self.assertNotIn("creation_id", payload)
+
+    def test_container_status_is_read_without_publish(self) -> None:
+        publisher = ComicThreadsPublisher("test-token")
+        publisher.get_user_id = Mock(return_value="user-id")
+        publisher._request = Mock(
+            side_effect=[{"id": "creation-id"}, {"id": "creation-id", "status": "FINISHED"}]
+        )
+        creation_id = publisher.create_image_container(
+            "safe text",
+            "https://media.example.com/comic.png",
+            "猫と犬の日常を描いた縦4コマ漫画",
+            "猫",
+        )
+        self.assertEqual(publisher.get_container_status(creation_id), "FINISHED")
+        self.assertEqual(publisher._request.call_count, 2)
+        self.assertFalse(
+            any("threads_publish" in str(call) for call in publisher._request.call_args_list)
+        )
+        publisher.close()
+        self.assertFalse(THREADS_IMAGE_CONTAINER_TEST_ENABLED)
+        self.assertEqual(CONTAINER_TEST_LIMIT, 1)
 
 
 if __name__ == "__main__":

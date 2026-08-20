@@ -101,6 +101,23 @@ class ComicThreadsPublisher(ThreadsPublisher):
             )
             return self._create_image_container_once(text, image_url, alt_text, None)
 
+    def get_container_status(self, creation_id: str) -> str:
+        if not creation_id:
+            raise ValueError("creation_id must not be empty")
+        payload = self._request(
+            "GET",
+            f"/{creation_id}",
+            stage="container status",
+            params={"fields": "id,status"},
+        )
+        status = payload.get("status")
+        if not isinstance(status, str) or not status:
+            raise ThreadsAPIError(
+                "Threads container status API response did not include a status",
+                stage="container status",
+            )
+        return status
+
     def publish_image(
         self,
         text: str,

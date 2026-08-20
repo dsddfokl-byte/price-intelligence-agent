@@ -46,7 +46,7 @@ class GitHubPagesAssetTests(unittest.TestCase):
             self.assertEqual(row["sha256"], source_hash)
             self.assertEqual(public_hash, source_hash)
 
-    def test_expected_url_and_disabled_flags(self) -> None:
+    def test_expected_url_and_safe_flags(self) -> None:
         provider = GitHubPagesComicMediaHostingProvider()
         urls = [provider.expected_public_url(f"comic_{index:03d}") for index in range(1, 51)]
         self.assertEqual(len(set(urls)), 50)
@@ -56,7 +56,7 @@ class GitHubPagesAssetTests(unittest.TestCase):
             "assets/comics/v1/comic_001.png",
         )
         self.assertTrue(all(url.startswith("https://") for url in urls))
-        self.assertEqual(COMIC_MEDIA_HOSTING_PROVIDER, "disabled")
+        self.assertEqual(COMIC_MEDIA_HOSTING_PROVIDER, "github_pages")
         self.assertFalse(COMIC_STOCK_PUBLISHING_ENABLED)
 
 

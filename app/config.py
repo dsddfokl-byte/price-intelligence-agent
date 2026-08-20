@@ -19,13 +19,17 @@ RUN_CYCLE_LOCK_PATH = PROJECT_ROOT / "data" / "run_cycle.lock"
 SEARCH_TERMS_PATH = PROJECT_ROOT / "config" / "search_terms.json"
 PET_OWNER_TIPS_PATH = PROJECT_ROOT / "config" / "pet_owner_tips.json"
 COMIC_STOCK_MANIFEST_PATH = PROJECT_ROOT / "config" / "comic_stock_manifest.json"
+COMIC_PUBLIC_MANIFEST_PATH = PROJECT_ROOT / "config" / "comic_public_manifest.json"
 COMIC_STOCK_ENABLED = True
 COMIC_STOCK_PUBLISHING_ENABLED = False
+THREADS_IMAGE_CONTAINER_TEST_ENABLED = (
+    os.getenv("THREADS_IMAGE_CONTAINER_TEST_ENABLED", "false").lower() == "true"
+)
 COMIC_REUSE_COOLDOWN_DAYS = 30
 COMIC_STOCK_EXPERIMENT_SALT = "comic_stock_experiment_v1"
 COMIC_MEDIA_BASE_URL = None
-COMIC_MEDIA_HOSTING_STATUS = "MEDIA_HOSTING_NOT_CONFIGURED"
-COMIC_MEDIA_HOSTING_PROVIDER = "disabled"
+COMIC_MEDIA_HOSTING_STATUS = "GITHUB_PAGES_CONFIGURED"
+COMIC_MEDIA_HOSTING_PROVIDER = "github_pages"
 COMIC_GITHUB_PAGES_BASE_URL = (
     "https://dsddfokl-byte.github.io/price-intelligence-agent"
 )
