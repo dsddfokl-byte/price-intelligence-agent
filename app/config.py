@@ -21,7 +21,11 @@ PET_OWNER_TIPS_PATH = PROJECT_ROOT / "config" / "pet_owner_tips.json"
 COMIC_STOCK_MANIFEST_PATH = PROJECT_ROOT / "config" / "comic_stock_manifest.json"
 COMIC_PUBLIC_MANIFEST_PATH = PROJECT_ROOT / "config" / "comic_public_manifest.json"
 COMIC_STOCK_ENABLED = True
-COMIC_STOCK_PUBLISHING_ENABLED = False
+COMIC_STOCK_PUBLISHING_ENABLED = (
+    os.getenv("COMIC_STOCK_PUBLISHING_ENABLED", "false").lower() == "true"
+)
+COMIC_PRODUCTION_TEST_LIMIT = 1
+THREADS_PUBLISH_CALL_LIMIT = 1
 THREADS_IMAGE_CONTAINER_TEST_ENABLED = (
     os.getenv("THREADS_IMAGE_CONTAINER_TEST_ENABLED", "false").lower() == "true"
 )

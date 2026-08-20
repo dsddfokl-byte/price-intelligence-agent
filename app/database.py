@@ -740,3 +740,62 @@ class Database:
                     selection_reason,
                 ),
             )
+
+    def record_published_comic_post(
+        self,
+        *,
+        item_code: str,
+        threads_post_id: str,
+        posted_at: str,
+        deal_score: float,
+        price: Optional[int],
+        text_hash: str,
+        topic_tag: str,
+        template_variant: str,
+        tip_id: Optional[str],
+        content_trigger: Optional[str],
+        search_keyword: str,
+        comic_id: str,
+        comic_file: str,
+        comic_stock_version: str,
+        media_url: str,
+        media_hosting_provider: str,
+        selected_at: str,
+        selection_score: float,
+        selection_reason: str,
+    ) -> None:
+        """Atomically persist one successfully published comic post and usage."""
+        with self.connection:
+            self.connection.execute(
+                """
+                INSERT INTO threads_posts(
+                    item_code, threads_post_id, posted_at, deal_score,
+                    price, text_hash, status, topic_tag, template_variant,
+                    tip_id, content_trigger, search_keyword,
+                    comic_id, comic_file, comic_stock_version,
+                    assigned_media_variant, delivered_media_variant,
+                    media_url, media_hosting_provider
+                ) VALUES (?, ?, ?, ?, ?, ?, 'published', ?, ?, ?, ?, ?, ?, ?, ?,
+                          'COMIC', 'COMIC', ?, ?)
+                """,
+                (
+                    item_code, threads_post_id, posted_at, deal_score,
+                    price, text_hash, topic_tag, template_variant,
+                    tip_id, content_trigger, search_keyword,
+                    comic_id, comic_file, comic_stock_version,
+                    media_url, media_hosting_provider,
+                ),
+            )
+            self.connection.execute(
+                """
+                INSERT INTO comic_usage(
+                    comic_id, thread_post_id, item_code, category, selected_at,
+                    published_at, assigned, delivered, selection_score,
+                    selection_reason
+                ) VALUES (?, ?, ?, ?, ?, ?, 'COMIC', 'COMIC', ?, ?)
+                """,
+                (
+                    comic_id, threads_post_id, item_code, search_keyword,
+                    selected_at, posted_at, selection_score, selection_reason,
+                ),
+            )

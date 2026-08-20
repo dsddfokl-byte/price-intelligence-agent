@@ -118,6 +118,54 @@ class ComicThreadsPublisher(ThreadsPublisher):
             )
         return status
 
+    def publish_finished_container_once(
+        self, creation_id: str, container_status: str
+    ) -> str:
+        """Publish exactly once; ambiguous transport failures are never retried."""
+        if container_status != "FINISHED":
+            raise ThreadsPostError("Threads image container is not ready to publish")
+        user_id = self.get_user_id()
+        try:
+            response = self.session.request(
+                "POST",
+                f"{self.api_base_url}/{user_id}/threads_publish",
+                params={"creation_id": creation_id},
+                timeout=self.timeout,
+            )
+        except Exception as error:
+            raise ThreadsAPIError(
+                "Threads publish result is ambiguous; automatic retry is disabled",
+                stage="publish",
+            ) from error
+        if not 200 <= response.status_code < 300:
+            raise self._api_error(response, "publish")
+        try:
+            payload = response.json()
+        except (ValueError, TypeError):
+            raise ThreadsAPIError(
+                "Threads publish API returned invalid JSON; automatic retry is disabled",
+                stage="publish",
+            ) from None
+        post_id = payload.get("id") if isinstance(payload, dict) else None
+        if not post_id:
+            raise ThreadsAPIError(
+                "Threads publish API response did not include a post id",
+                stage="publish",
+            )
+        return str(post_id)
+
+    def get_post_details(self, post_id: str) -> dict:
+        if not post_id:
+            raise ValueError("post_id must not be empty")
+        return self._request(
+            "GET",
+            f"/{post_id}",
+            stage="post verification",
+            params={
+                "fields": "id,media_type,media_url,permalink,text,alt_text,timestamp"
+            },
+        )
+
     def publish_image(
         self,
         text: str,
