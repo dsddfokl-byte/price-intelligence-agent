@@ -188,6 +188,36 @@ def main() -> int:
                 f"views={views} | likes={row['likes'] or 0} | "
                 f"replies={row['replies'] or 0} | score={row['deal_score']:.2f}"
             )
+
+        print("\nComic別（分析のみ・Optimizer未使用）")
+        comic_rows = connection.execute(
+            """
+            SELECT comic_id, COUNT(*) AS published_count,
+                   AVG(views) AS views_per_post,
+                   AVG(replies) AS replies_per_post,
+                   AVG(reposts) AS reposts_per_post,
+                   AVG(clicks) AS clicks_per_post,
+                   AVG(confirmed_commission) AS commission_per_post
+            FROM threads_posts
+            WHERE status = 'published' AND posted_at >= ?
+              AND delivered_media_variant = 'COMIC' AND comic_id IS NOT NULL
+            GROUP BY comic_id ORDER BY published_count DESC, comic_id
+            """,
+            (since,),
+        ).fetchall()
+        if not comic_rows:
+            print("配信済みcomic投稿なし")
+        for row in comic_rows:
+            def nullable(value: object) -> str:
+                return "N/A" if value is None else f"{float(value):.2f}"
+            print(
+                f"{row['comic_id']}: published={row['published_count']}, "
+                f"views/post={nullable(row['views_per_post'])}, "
+                f"replies/post={nullable(row['replies_per_post'])}, "
+                f"reposts/post={nullable(row['reposts_per_post'])}, "
+                f"clicks/post={nullable(row['clicks_per_post'])}, "
+                f"commission/post={nullable(row['commission_per_post'])}"
+            )
     return 0
 
 

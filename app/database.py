@@ -79,6 +79,11 @@ CREATE TABLE IF NOT EXISTS threads_posts (
     confirmed_orders INTEGER,
     confirmed_commission REAL,
     outcome_status TEXT,
+    comic_id TEXT,
+    comic_file TEXT,
+    comic_stock_version TEXT,
+    assigned_media_variant TEXT,
+    delivered_media_variant TEXT,
     FOREIGN KEY(item_code) REFERENCES products(item_code)
 );
 
@@ -240,6 +245,25 @@ CREATE INDEX IF NOT EXISTS idx_performance_snapshots_cutoff
     ON post_performance_snapshots(is_valid_72h, captured_at);
 CREATE INDEX IF NOT EXISTS idx_optimizer_scores_cycle_rank
     ON optimizer_shadow_candidate_scores(cycle_id, rank_position);
+
+CREATE TABLE IF NOT EXISTS comic_usage (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    comic_id TEXT NOT NULL,
+    thread_post_id TEXT,
+    item_code TEXT NOT NULL,
+    category TEXT NOT NULL,
+    selected_at TEXT NOT NULL,
+    published_at TEXT,
+    assigned TEXT NOT NULL,
+    delivered TEXT NOT NULL,
+    selection_score REAL NOT NULL,
+    selection_reason TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_comic_usage_comic_selected
+    ON comic_usage(comic_id, selected_at);
+CREATE INDEX IF NOT EXISTS idx_comic_usage_item
+    ON comic_usage(item_code, comic_id);
 """
 
 EXPERIMENT_CYCLES_MIGRATION_COLUMNS = {
@@ -278,6 +302,11 @@ THREADS_INSIGHTS_MIGRATION_COLUMNS = {
     "confirmed_orders": "INTEGER",
     "confirmed_commission": "REAL",
     "outcome_status": "TEXT",
+    "comic_id": "TEXT",
+    "comic_file": "TEXT",
+    "comic_stock_version": "TEXT",
+    "assigned_media_variant": "TEXT",
+    "delivered_media_variant": "TEXT",
 }
 
 AUTOPILOT_STATE_MIGRATION_COLUMNS = {
@@ -621,6 +650,11 @@ class Database:
         experiment_arm: Optional[str] = None,
         assignment_key: Optional[str] = None,
         experiment_epoch: Optional[str] = None,
+        comic_id: Optional[str] = None,
+        comic_file: Optional[str] = None,
+        comic_stock_version: Optional[str] = None,
+        assigned_media_variant: Optional[str] = None,
+        delivered_media_variant: Optional[str] = None,
     ) -> None:
         with self.connection:
             self.connection.execute(
@@ -629,8 +663,10 @@ class Database:
                     item_code, threads_post_id, posted_at, deal_score,
                     price, text_hash, status, error, topic_tag,
                     template_variant, tip_id, content_trigger, search_keyword,
-                    experiment_arm, assignment_key, experiment_epoch
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    experiment_arm, assignment_key, experiment_epoch,
+                    comic_id, comic_file, comic_stock_version,
+                    assigned_media_variant, delivered_media_variant
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     item_code,
@@ -649,5 +685,45 @@ class Database:
                     experiment_arm,
                     assignment_key,
                     experiment_epoch,
+                    comic_id,
+                    comic_file,
+                    comic_stock_version,
+                    assigned_media_variant,
+                    delivered_media_variant,
+                ),
+            )
+
+    def comic_usage_rows(self) -> Iterable[sqlite3.Row]:
+        return self.connection.execute(
+            "SELECT * FROM comic_usage ORDER BY selected_at DESC"
+        ).fetchall()
+
+    def record_comic_usage(
+        self,
+        *,
+        comic_id: str,
+        thread_post_id: Optional[str],
+        item_code: str,
+        category: str,
+        selected_at: str,
+        published_at: Optional[str],
+        assigned: str,
+        delivered: str,
+        selection_score: float,
+        selection_reason: str,
+    ) -> None:
+        with self.connection:
+            self.connection.execute(
+                """
+                INSERT INTO comic_usage(
+                    comic_id, thread_post_id, item_code, category, selected_at,
+                    published_at, assigned, delivered, selection_score,
+                    selection_reason
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    comic_id, thread_post_id, item_code, category, selected_at,
+                    published_at, assigned, delivered, selection_score,
+                    selection_reason,
                 ),
             )

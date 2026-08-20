@@ -1,0 +1,1837 @@
+{
+  "stock_version": "comic_stock_v1",
+  "asset_root": "assets/comics/stock/v1",
+  "items": [
+    {
+      "comic_id": "comic_001",
+      "file": "01_猫のいたずら大掃除コミック_修正版.png",
+      "sha256": "c4e75b668ddc7c5f723183331d45a22e9bdb397baa21dcb75ceeac48c888f65e",
+      "enabled": true,
+      "category_tags": [
+        "猫砂",
+        "ペット トイレ",
+        "ペットシーツ"
+      ],
+      "category_scores": {
+        "猫砂": 100,
+        "ペット トイレ": 100,
+        "ペットシーツ": 40
+      },
+      "topic_tags": [
+        "ペット",
+        "猫"
+      ],
+      "theme": "CLEANING",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "cleaning"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_002",
+      "file": "02_なかよしペット給水器デビュー漫画.png",
+      "sha256": "f97c02cbb1bf7a7bc2f56ac8364677f2884c1481f3feaefb43dd8f9107106c89",
+      "enabled": true,
+      "category_tags": [
+        "ペット 給水器",
+        "猫 フード",
+        "犬 フード"
+      ],
+      "category_scores": {
+        "ペット 給水器": 100,
+        "猫 フード": 25,
+        "犬 フード": 25
+      },
+      "topic_tags": [
+        "ペット",
+        "犬",
+        "猫"
+      ],
+      "theme": "UTILITY",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "utility"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_003",
+      "file": "03_ほっこりペットごはんタイム.png",
+      "sha256": "160c6afb643a799af9b842395c7033140a3fc90550c7cac08fbf368393ecc572",
+      "enabled": true,
+      "category_tags": [
+        "猫 フード",
+        "犬 フード",
+        "ペット 自動給餌器"
+      ],
+      "category_scores": {
+        "猫 フード": 100,
+        "犬 フード": 100,
+        "ペット 自動給餌器": 40
+      },
+      "topic_tags": [
+        "ペット",
+        "犬",
+        "猫"
+      ],
+      "theme": "FOOD",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "food"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_004",
+      "file": "04_ふたりともおりこうさん漫画.png",
+      "sha256": "c33423a4b0440cb5e050cc64f1664c1105ed4b2e0c4f05cb335a4607ab566931",
+      "enabled": true,
+      "category_tags": [
+        "猫 フード",
+        "猫砂",
+        "ペットシーツ",
+        "犬 フード",
+        "犬 おやつ",
+        "猫 おやつ",
+        "犬 おもちゃ",
+        "猫 おもちゃ",
+        "ペット 自動給餌器",
+        "ペット 給水器",
+        "ペットカメラ",
+        "ペット トイレ"
+      ],
+      "category_scores": {
+        "猫 フード": 20,
+        "猫砂": 20,
+        "ペットシーツ": 20,
+        "犬 フード": 20,
+        "犬 おやつ": 20,
+        "猫 おやつ": 20,
+        "犬 おもちゃ": 20,
+        "猫 おもちゃ": 20,
+        "ペット 自動給餌器": 20,
+        "ペット 給水器": 20,
+        "ペットカメラ": 20,
+        "ペット トイレ": 20
+      },
+      "topic_tags": [
+        "ペット",
+        "犬",
+        "猫"
+      ],
+      "theme": "HEARTWARMING",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "pet_life"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_005",
+      "file": "05_新しいおもちゃより箱が好き.png",
+      "sha256": "06bc704d6e7e2d6a121e5be778740d29bea9e1b3300d2f99b16d4098a5885b53",
+      "enabled": true,
+      "category_tags": [
+        "犬 おもちゃ",
+        "猫 おもちゃ"
+      ],
+      "category_scores": {
+        "犬 おもちゃ": 100,
+        "猫 おもちゃ": 100
+      },
+      "topic_tags": [
+        "犬",
+        "猫"
+      ],
+      "theme": "PLAY",
+      "mood": "funny",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "play"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_006",
+      "file": "06_おとなしかったのは一秒だけ.png",
+      "sha256": "fea62b7b3256a48c223c5c8eaa07ac01e221378760761c8cf31df0e3aed46055",
+      "enabled": true,
+      "category_tags": [
+        "犬 おもちゃ",
+        "猫 おもちゃ"
+      ],
+      "category_scores": {
+        "犬 おもちゃ": 100,
+        "猫 おもちゃ": 100
+      },
+      "topic_tags": [
+        "犬",
+        "猫"
+      ],
+      "theme": "PLAY",
+      "mood": "funny",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "play"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_007",
+      "file": "07_仲良しペットのごはんタイム.png",
+      "sha256": "b653e926abe2f20852c3946f72ac6f0290c3c8b6df90aae59bb746a19b2d8abd",
+      "enabled": true,
+      "category_tags": [
+        "猫 フード",
+        "犬 フード",
+        "ペット 自動給餌器"
+      ],
+      "category_scores": {
+        "猫 フード": 100,
+        "犬 フード": 100,
+        "ペット 自動給餌器": 40
+      },
+      "topic_tags": [
+        "ペット",
+        "犬",
+        "猫"
+      ],
+      "theme": "FOOD",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "food"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_008",
+      "file": "08_子犬トレーニング大成功.png",
+      "sha256": "b4c84bfc77cb6e88de2c8eddc2d95a164ee5de9c6170a3e6fb6b7f1a1f6f0d5e",
+      "enabled": true,
+      "category_tags": [
+        "ペットシーツ",
+        "ペット トイレ"
+      ],
+      "category_scores": {
+        "ペットシーツ": 100,
+        "ペット トイレ": 60
+      },
+      "topic_tags": [
+        "ペット"
+      ],
+      "theme": "UTILITY",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "utility_sheets"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_009",
+      "file": "09_わんこと猫と少女のほのぼの遊び時間.png",
+      "sha256": "5489e68e3aa76cd0c125cb054cd206ca62494c712194c2377a048c5cbce94b72",
+      "enabled": true,
+      "category_tags": [
+        "犬 おもちゃ",
+        "猫 おもちゃ"
+      ],
+      "category_scores": {
+        "犬 おもちゃ": 100,
+        "猫 おもちゃ": 100
+      },
+      "topic_tags": [
+        "犬",
+        "猫"
+      ],
+      "theme": "PLAY",
+      "mood": "funny",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "play"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_010",
+      "file": "10_ただいま_みんなの笑顔の帰宅劇.png",
+      "sha256": "4942191537166362772c898721dc67124a8f6f8fb2efcb9e3994f7a182111122",
+      "enabled": true,
+      "category_tags": [
+        "猫 フード",
+        "猫砂",
+        "ペットシーツ",
+        "犬 フード",
+        "犬 おやつ",
+        "猫 おやつ",
+        "犬 おもちゃ",
+        "猫 おもちゃ",
+        "ペット 自動給餌器",
+        "ペット 給水器",
+        "ペットカメラ",
+        "ペット トイレ"
+      ],
+      "category_scores": {
+        "猫 フード": 20,
+        "猫砂": 20,
+        "ペットシーツ": 20,
+        "犬 フード": 20,
+        "犬 おやつ": 20,
+        "猫 おやつ": 20,
+        "犬 おもちゃ": 20,
+        "猫 おもちゃ": 20,
+        "ペット 自動給餌器": 20,
+        "ペット 給水器": 20,
+        "ペットカメラ": 20,
+        "ペット トイレ": 20
+      },
+      "topic_tags": [
+        "ペット",
+        "犬",
+        "猫"
+      ],
+      "theme": "HEARTWARMING",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "pet_life"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_011",
+      "file": "11_ほのぼの猫犬とお掃除日和.png",
+      "sha256": "44ca66dde3d8109b3b4bc19bf032b4166be4032402eeee8ec032f449b5e3c0d6",
+      "enabled": true,
+      "category_tags": [
+        "猫砂",
+        "ペット トイレ",
+        "ペットシーツ"
+      ],
+      "category_scores": {
+        "猫砂": 100,
+        "ペット トイレ": 100,
+        "ペットシーツ": 40
+      },
+      "topic_tags": [
+        "ペット",
+        "猫"
+      ],
+      "theme": "CLEANING",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "cleaning"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_012",
+      "file": "12_水遊びする仲良しペットたち.png",
+      "sha256": "5df23fcbe5597a412c7c57ffd2adb9c14faecf42883ddc469061b5706a2aef56",
+      "enabled": true,
+      "category_tags": [
+        "ペット 給水器",
+        "猫 フード",
+        "犬 フード"
+      ],
+      "category_scores": {
+        "ペット 給水器": 100,
+        "猫 フード": 25,
+        "犬 フード": 25
+      },
+      "topic_tags": [
+        "ペット",
+        "犬",
+        "猫"
+      ],
+      "theme": "UTILITY",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "utility"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_013",
+      "file": "13_ふたりと一匹のごはんタイム.png",
+      "sha256": "391444dca96df201052f9295917f60ca65c5d2477d775b15e059b732cba61baf",
+      "enabled": true,
+      "category_tags": [
+        "猫 フード",
+        "犬 フード",
+        "ペット 自動給餌器"
+      ],
+      "category_scores": {
+        "猫 フード": 100,
+        "犬 フード": 100,
+        "ペット 自動給餌器": 40
+      },
+      "topic_tags": [
+        "ペット",
+        "犬",
+        "猫"
+      ],
+      "theme": "FOOD",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "food"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_014",
+      "file": "14_ねこ待ちのごはんタイム四コマ.png",
+      "sha256": "b81a7c65cca5519b586aef2d11e5808534e9184b70416a9e17cc89554a819287",
+      "enabled": true,
+      "category_tags": [
+        "猫 フード",
+        "犬 フード",
+        "ペット 自動給餌器"
+      ],
+      "category_scores": {
+        "猫 フード": 100,
+        "犬 フード": 100,
+        "ペット 自動給餌器": 40
+      },
+      "topic_tags": [
+        "ペット",
+        "犬",
+        "猫"
+      ],
+      "theme": "FOOD",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "food"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_015",
+      "file": "15_猫はおもちゃより段ボール箱がお好き.png",
+      "sha256": "011fbf725f4ca00011cf8d6d602bedb9ac37c3be633d3729c4d35a3a110b5b4d",
+      "enabled": true,
+      "category_tags": [
+        "犬 おもちゃ",
+        "猫 おもちゃ"
+      ],
+      "category_scores": {
+        "犬 おもちゃ": 100,
+        "猫 おもちゃ": 100
+      },
+      "topic_tags": [
+        "犬",
+        "猫"
+      ],
+      "theme": "PLAY",
+      "mood": "funny",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "play"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_016",
+      "file": "16_ほのぼのペットカメラ日記.png",
+      "sha256": "b9ae7b1de76623b57e8c304ae63fa5e521423a83b0bed3c75e82cad99d73caab",
+      "enabled": true,
+      "category_tags": [
+        "ペットカメラ"
+      ],
+      "category_scores": {
+        "ペットカメラ": 100
+      },
+      "topic_tags": [
+        "ペット"
+      ],
+      "theme": "MONITORING",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "monitoring"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_017",
+      "file": "17_こっそりごはんを狙う猫ちゃん漫画.png",
+      "sha256": "5e41127cd55becd809de1a4128d43b0780beb763154becb099b6366128b3241e",
+      "enabled": true,
+      "category_tags": [
+        "猫 フード",
+        "犬 フード",
+        "ペット 自動給餌器"
+      ],
+      "category_scores": {
+        "猫 フード": 100,
+        "犬 フード": 100,
+        "ペット 自動給餌器": 40
+      },
+      "topic_tags": [
+        "ペット",
+        "犬",
+        "猫"
+      ],
+      "theme": "FOOD",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "food"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_018",
+      "file": "18_犬と猫のボール遊び対決.png",
+      "sha256": "d6e0a49d223badaeec751e774182871a5005599428d67ea323926fd3dc51a64c",
+      "enabled": true,
+      "category_tags": [
+        "犬 おもちゃ",
+        "猫 おもちゃ"
+      ],
+      "category_scores": {
+        "犬 おもちゃ": 100,
+        "猫 おもちゃ": 100
+      },
+      "topic_tags": [
+        "犬",
+        "猫"
+      ],
+      "theme": "PLAY",
+      "mood": "funny",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "play"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_019",
+      "file": "19_ペットトレーニングパッド大作戦.png",
+      "sha256": "8ff68f9ae6b7251da364ffb1dc5f2f132f45dc7e0bdce6ad1309c14ca50bc812",
+      "enabled": true,
+      "category_tags": [
+        "ペットシーツ",
+        "ペット トイレ"
+      ],
+      "category_scores": {
+        "ペットシーツ": 100,
+        "ペット トイレ": 60
+      },
+      "topic_tags": [
+        "ペット"
+      ],
+      "theme": "UTILITY",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "utility_sheets"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_020",
+      "file": "20_おやつをめぐる仲良し四コマ.png",
+      "sha256": "b9433cc42a15a47adf41b4ec9cb1c071666433c035411b74052c7317c5bc3b72",
+      "enabled": true,
+      "category_tags": [
+        "犬 おやつ",
+        "猫 おやつ"
+      ],
+      "category_scores": {
+        "犬 おやつ": 100,
+        "猫 おやつ": 100
+      },
+      "topic_tags": [
+        "犬",
+        "猫"
+      ],
+      "theme": "FOOD",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "food_treats"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_021",
+      "file": "21_わんことにゃんこのおさんぽ日和.png",
+      "sha256": "01da795dbc62b3ba00d70e120dbf9fb2929f5f73fedd232d4ec954335590f49e",
+      "enabled": true,
+      "category_tags": [
+        "猫 フード",
+        "猫砂",
+        "ペットシーツ",
+        "犬 フード",
+        "犬 おやつ",
+        "猫 おやつ",
+        "犬 おもちゃ",
+        "猫 おもちゃ",
+        "ペット 自動給餌器",
+        "ペット 給水器",
+        "ペットカメラ",
+        "ペット トイレ"
+      ],
+      "category_scores": {
+        "猫 フード": 20,
+        "猫砂": 20,
+        "ペットシーツ": 20,
+        "犬 フード": 20,
+        "犬 おやつ": 20,
+        "猫 おやつ": 20,
+        "犬 おもちゃ": 20,
+        "猫 おもちゃ": 20,
+        "ペット 自動給餌器": 20,
+        "ペット 給水器": 20,
+        "ペットカメラ": 20,
+        "ペット トイレ": 20
+      },
+      "topic_tags": [
+        "ペット",
+        "犬",
+        "猫"
+      ],
+      "theme": "HEARTWARMING",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "pet_life"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_022",
+      "file": "22_ペットカメラでつながるおかえり.png",
+      "sha256": "d4662ee72500120b70cef2680c68768455c71d408c5139359270d8ee45950061",
+      "enabled": true,
+      "category_tags": [
+        "ペットカメラ"
+      ],
+      "category_scores": {
+        "ペットカメラ": 100
+      },
+      "topic_tags": [
+        "ペット"
+      ],
+      "theme": "MONITORING",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "monitoring"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_023",
+      "file": "23_トンネル遊びで笑顔いっぱい.png",
+      "sha256": "a734012cc07524af7bbf5679c3349911be01a764c46957cc796bdddf63b38f25",
+      "enabled": true,
+      "category_tags": [
+        "犬 おもちゃ",
+        "猫 おもちゃ"
+      ],
+      "category_scores": {
+        "犬 おもちゃ": 100,
+        "猫 おもちゃ": 100
+      },
+      "topic_tags": [
+        "犬",
+        "猫"
+      ],
+      "theme": "PLAY",
+      "mood": "funny",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "play"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_024",
+      "file": "24_ぽかぽか陽だまりで仲良しお昼寝.png",
+      "sha256": "c549ffd8c6e53bb512fc6feee72720ed6f7d9caa9e410e9608255075af25b12b",
+      "enabled": true,
+      "category_tags": [
+        "猫 フード",
+        "猫砂",
+        "ペットシーツ",
+        "犬 フード",
+        "犬 おやつ",
+        "猫 おやつ",
+        "犬 おもちゃ",
+        "猫 おもちゃ",
+        "ペット 自動給餌器",
+        "ペット 給水器",
+        "ペットカメラ",
+        "ペット トイレ"
+      ],
+      "category_scores": {
+        "猫 フード": 20,
+        "猫砂": 20,
+        "ペットシーツ": 20,
+        "犬 フード": 20,
+        "犬 おやつ": 20,
+        "猫 おやつ": 20,
+        "犬 おもちゃ": 20,
+        "猫 おもちゃ": 20,
+        "ペット 自動給餌器": 20,
+        "ペット 給水器": 20,
+        "ペットカメラ": 20,
+        "ペット トイレ": 20
+      },
+      "topic_tags": [
+        "ペット",
+        "犬",
+        "猫"
+      ],
+      "theme": "HEARTWARMING",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "pet_life"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_025",
+      "file": "25_おやつを待つ仲良しペットたち.png",
+      "sha256": "2a6356b747650b2d60c2f6ea96a6e9f721b0313e406bbebde096f3f5a4e74fb1",
+      "enabled": true,
+      "category_tags": [
+        "犬 おやつ",
+        "猫 おやつ"
+      ],
+      "category_scores": {
+        "犬 おやつ": 100,
+        "猫 おやつ": 100
+      },
+      "topic_tags": [
+        "犬",
+        "猫"
+      ],
+      "theme": "FOOD",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "food_treats"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_026",
+      "file": "26_自動給餌器に大はしゃぎ.png",
+      "sha256": "b31be0fd265004220105c6d86eda21920b13a5e5acb3c48743863990062db9a1",
+      "enabled": true,
+      "category_tags": [
+        "ペット 自動給餌器",
+        "猫 フード",
+        "犬 フード"
+      ],
+      "category_scores": {
+        "ペット 自動給餌器": 100,
+        "猫 フード": 40,
+        "犬 フード": 40
+      },
+      "topic_tags": [
+        "ペット",
+        "犬",
+        "猫"
+      ],
+      "theme": "FOOD",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "feeder"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_027",
+      "file": "27_わんにゃんふわふわブラッシング日和.png",
+      "sha256": "56952dd7c9dbd6812320c159538b5acb70a08792a01cbe34726a2386077c2ad7",
+      "enabled": true,
+      "category_tags": [
+        "猫 フード",
+        "猫砂",
+        "ペットシーツ",
+        "犬 フード",
+        "犬 おやつ",
+        "猫 おやつ",
+        "犬 おもちゃ",
+        "猫 おもちゃ",
+        "ペット 自動給餌器",
+        "ペット 給水器",
+        "ペットカメラ",
+        "ペット トイレ"
+      ],
+      "category_scores": {
+        "猫 フード": 20,
+        "猫砂": 20,
+        "ペットシーツ": 20,
+        "犬 フード": 20,
+        "犬 おやつ": 20,
+        "猫 おやつ": 20,
+        "犬 おもちゃ": 20,
+        "猫 おもちゃ": 20,
+        "ペット 自動給餌器": 20,
+        "ペット 給水器": 20,
+        "ペットカメラ": 20,
+        "ペット トイレ": 20
+      },
+      "topic_tags": [
+        "ペット",
+        "犬",
+        "猫"
+      ],
+      "theme": "HEARTWARMING",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "pet_life"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_028",
+      "file": "28_ふたりで入れたね.png",
+      "sha256": "fc4cc551b3e1bdf803b7cc7a5f0d87408d2e79175535ae142606f82631a63eea",
+      "enabled": true,
+      "category_tags": [
+        "猫 フード",
+        "猫砂",
+        "ペットシーツ",
+        "犬 フード",
+        "犬 おやつ",
+        "猫 おやつ",
+        "犬 おもちゃ",
+        "猫 おもちゃ",
+        "ペット 自動給餌器",
+        "ペット 給水器",
+        "ペットカメラ",
+        "ペット トイレ"
+      ],
+      "category_scores": {
+        "猫 フード": 20,
+        "猫砂": 20,
+        "ペットシーツ": 20,
+        "犬 フード": 20,
+        "犬 おやつ": 20,
+        "猫 おやつ": 20,
+        "犬 おもちゃ": 20,
+        "猫 おもちゃ": 20,
+        "ペット 自動給餌器": 20,
+        "ペット 給水器": 20,
+        "ペットカメラ": 20,
+        "ペット トイレ": 20
+      },
+      "topic_tags": [
+        "ペット",
+        "犬",
+        "猫"
+      ],
+      "theme": "HEARTWARMING",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "pet_life"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_029",
+      "file": "29_おやすみ前の愛らしい仲間たち.png",
+      "sha256": "b71050d4d335ccb9675894f329f5e7fe54e8d2e583f1d367885fdc9def32ac58",
+      "enabled": true,
+      "category_tags": [
+        "猫 フード",
+        "猫砂",
+        "ペットシーツ",
+        "犬 フード",
+        "犬 おやつ",
+        "猫 おやつ",
+        "犬 おもちゃ",
+        "猫 おもちゃ",
+        "ペット 自動給餌器",
+        "ペット 給水器",
+        "ペットカメラ",
+        "ペット トイレ"
+      ],
+      "category_scores": {
+        "猫 フード": 20,
+        "猫砂": 20,
+        "ペットシーツ": 20,
+        "犬 フード": 20,
+        "犬 おやつ": 20,
+        "猫 おやつ": 20,
+        "犬 おもちゃ": 20,
+        "猫 おもちゃ": 20,
+        "ペット 自動給餌器": 20,
+        "ペット 給水器": 20,
+        "ペットカメラ": 20,
+        "ペット トイレ": 20
+      },
+      "topic_tags": [
+        "ペット",
+        "犬",
+        "猫"
+      ],
+      "theme": "HEARTWARMING",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "pet_life"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_030",
+      "file": "30_箱の中の猫と眠る犬.png",
+      "sha256": "7f5011147cad9c8ac26aa57c94413f851c7c5a671aa77a41de3b5c92cba3fc2c",
+      "enabled": true,
+      "category_tags": [
+        "猫 フード",
+        "猫砂",
+        "ペットシーツ",
+        "犬 フード",
+        "犬 おやつ",
+        "猫 おやつ",
+        "犬 おもちゃ",
+        "猫 おもちゃ",
+        "ペット 自動給餌器",
+        "ペット 給水器",
+        "ペットカメラ",
+        "ペット トイレ"
+      ],
+      "category_scores": {
+        "猫 フード": 20,
+        "猫砂": 20,
+        "ペットシーツ": 20,
+        "犬 フード": 20,
+        "犬 おやつ": 20,
+        "猫 おやつ": 20,
+        "犬 おもちゃ": 20,
+        "猫 おもちゃ": 20,
+        "ペット 自動給餌器": 20,
+        "ペット 給水器": 20,
+        "ペットカメラ": 20,
+        "ペット トイレ": 20
+      },
+      "topic_tags": [
+        "ペット",
+        "犬",
+        "猫"
+      ],
+      "theme": "HEARTWARMING",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "pet_life"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_031",
+      "file": "31_しつけ成功_ごほうびタイム.png",
+      "sha256": "d530907db2ff8b9ab3d1f092a3014069bb27501ff90a6a04128982319f3238d0",
+      "enabled": true,
+      "category_tags": [
+        "犬 おやつ",
+        "猫 おやつ"
+      ],
+      "category_scores": {
+        "犬 おやつ": 100,
+        "猫 おやつ": 100
+      },
+      "topic_tags": [
+        "犬",
+        "猫"
+      ],
+      "theme": "FOOD",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "food_treats"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_032",
+      "file": "32_緑のトンネルで仲良し大冒険.png",
+      "sha256": "4a9b30e5a8e49a8621443575e20cb66344916ad4014b1cbaf4eb3de72cb34480",
+      "enabled": true,
+      "category_tags": [
+        "犬 おもちゃ",
+        "猫 おもちゃ"
+      ],
+      "category_scores": {
+        "犬 おもちゃ": 100,
+        "猫 おもちゃ": 100
+      },
+      "topic_tags": [
+        "犬",
+        "猫"
+      ],
+      "theme": "PLAY",
+      "mood": "funny",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "play"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_033",
+      "file": "33_ただいまのペット大歓迎.png",
+      "sha256": "801af4a2d8369a690c671fbebff57a8e0b7193b8fb0f47e28e53485e6b9b60ce",
+      "enabled": true,
+      "category_tags": [
+        "猫 フード",
+        "猫砂",
+        "ペットシーツ",
+        "犬 フード",
+        "犬 おやつ",
+        "猫 おやつ",
+        "犬 おもちゃ",
+        "猫 おもちゃ",
+        "ペット 自動給餌器",
+        "ペット 給水器",
+        "ペットカメラ",
+        "ペット トイレ"
+      ],
+      "category_scores": {
+        "猫 フード": 20,
+        "猫砂": 20,
+        "ペットシーツ": 20,
+        "犬 フード": 20,
+        "犬 おやつ": 20,
+        "猫 おやつ": 20,
+        "犬 おもちゃ": 20,
+        "猫 おもちゃ": 20,
+        "ペット 自動給餌器": 20,
+        "ペット 給水器": 20,
+        "ペットカメラ": 20,
+        "ペット トイレ": 20
+      },
+      "topic_tags": [
+        "ペット",
+        "犬",
+        "猫"
+      ],
+      "theme": "HEARTWARMING",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "pet_life"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_034",
+      "file": "34_おやつを待てるかな.png",
+      "sha256": "31c4a1edef6410171c6d65b892e9ae0c12e3ff897a82276931f62b3d358aa8a1",
+      "enabled": true,
+      "category_tags": [
+        "犬 おやつ",
+        "猫 おやつ"
+      ],
+      "category_scores": {
+        "犬 おやつ": 100,
+        "猫 おやつ": 100
+      },
+      "topic_tags": [
+        "犬",
+        "猫"
+      ],
+      "theme": "FOOD",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "food_treats"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_035",
+      "file": "35_雨の日のおうちボール遊び.png",
+      "sha256": "2aaf2ec14b0acf1270abb4fdbf439f189437eda4ab07e0cfc4ddd7ba17313093",
+      "enabled": true,
+      "category_tags": [
+        "犬 おもちゃ",
+        "猫 おもちゃ"
+      ],
+      "category_scores": {
+        "犬 おもちゃ": 100,
+        "猫 おもちゃ": 100
+      },
+      "topic_tags": [
+        "犬",
+        "猫"
+      ],
+      "theme": "PLAY",
+      "mood": "funny",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "play"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_036",
+      "file": "36_ぽちゃぽちゃ給水タイム漫画.png",
+      "sha256": "0e61ae7d78343ec58219436ee6997e3d6d8824f5f12bbcf706c363db416e01c9",
+      "enabled": true,
+      "category_tags": [
+        "ペット 給水器",
+        "猫 フード",
+        "犬 フード"
+      ],
+      "category_scores": {
+        "ペット 給水器": 100,
+        "猫 フード": 25,
+        "犬 フード": 25
+      },
+      "topic_tags": [
+        "ペット",
+        "犬",
+        "猫"
+      ],
+      "theme": "UTILITY",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "utility"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_037",
+      "file": "37_ペットシーツでごろ_ん大作戦.png",
+      "sha256": "989119204a696a3db133c51f2786d2a5151f2034257263318766f1eacbd3fb41",
+      "enabled": true,
+      "category_tags": [
+        "ペットシーツ",
+        "ペット トイレ"
+      ],
+      "category_scores": {
+        "ペットシーツ": 100,
+        "ペット トイレ": 60
+      },
+      "topic_tags": [
+        "ペット"
+      ],
+      "theme": "UTILITY",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "utility_sheets"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_038",
+      "file": "38_おやすみ前のふたりと少女.png",
+      "sha256": "ddcaf7e5369a17ba927ac26c6ec25b366cca354f9496ce1bc1235e65eadce144",
+      "enabled": true,
+      "category_tags": [
+        "猫 フード",
+        "猫砂",
+        "ペットシーツ",
+        "犬 フード",
+        "犬 おやつ",
+        "猫 おやつ",
+        "犬 おもちゃ",
+        "猫 おもちゃ",
+        "ペット 自動給餌器",
+        "ペット 給水器",
+        "ペットカメラ",
+        "ペット トイレ"
+      ],
+      "category_scores": {
+        "猫 フード": 20,
+        "猫砂": 20,
+        "ペットシーツ": 20,
+        "犬 フード": 20,
+        "犬 おやつ": 20,
+        "猫 おやつ": 20,
+        "犬 おもちゃ": 20,
+        "猫 おもちゃ": 20,
+        "ペット 自動給餌器": 20,
+        "ペット 給水器": 20,
+        "ペットカメラ": 20,
+        "ペット トイレ": 20
+      },
+      "topic_tags": [
+        "ペット",
+        "犬",
+        "猫"
+      ],
+      "theme": "HEARTWARMING",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "pet_life"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_039",
+      "file": "39_猫と柴犬の楽しいおもちゃ遊び四コマ.png",
+      "sha256": "46f6965a62df44092f5fe53a7cdce0e975731b479a95ce89b88787349ff7f8c2",
+      "enabled": true,
+      "category_tags": [
+        "犬 おもちゃ",
+        "猫 おもちゃ"
+      ],
+      "category_scores": {
+        "犬 おもちゃ": 100,
+        "猫 おもちゃ": 100
+      },
+      "topic_tags": [
+        "犬",
+        "猫"
+      ],
+      "theme": "PLAY",
+      "mood": "funny",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "play"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_040",
+      "file": "40_ペットカメラで見守るお留守番物語.png",
+      "sha256": "b81da04ce3670860d3dc2efc46abd32867b32899193c1ffd7d631607f13b19a7",
+      "enabled": true,
+      "category_tags": [
+        "ペットカメラ"
+      ],
+      "category_scores": {
+        "ペットカメラ": 100
+      },
+      "topic_tags": [
+        "ペット"
+      ],
+      "theme": "MONITORING",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "monitoring"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_041",
+      "file": "41_ほっこりブラッシングタイム.png",
+      "sha256": "74e090fe8abaf2ce6355260a44d1c71e0ff4a7d2864286e05559c3dd622874b7",
+      "enabled": true,
+      "category_tags": [
+        "猫 フード",
+        "猫砂",
+        "ペットシーツ",
+        "犬 フード",
+        "犬 おやつ",
+        "猫 おやつ",
+        "犬 おもちゃ",
+        "猫 おもちゃ",
+        "ペット 自動給餌器",
+        "ペット 給水器",
+        "ペットカメラ",
+        "ペット トイレ"
+      ],
+      "category_scores": {
+        "猫 フード": 20,
+        "猫砂": 20,
+        "ペットシーツ": 20,
+        "犬 フード": 20,
+        "犬 おやつ": 20,
+        "猫 おやつ": 20,
+        "犬 おもちゃ": 20,
+        "猫 おもちゃ": 20,
+        "ペット 自動給餌器": 20,
+        "ペット 給水器": 20,
+        "ペットカメラ": 20,
+        "ペット トイレ": 20
+      },
+      "topic_tags": [
+        "ペット",
+        "犬",
+        "猫"
+      ],
+      "theme": "HEARTWARMING",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "pet_life"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_042",
+      "file": "42_ペットたちのお手伝い大騒動.png",
+      "sha256": "5175b731887bb596d865ba7a67db83985b656ae6f2fc3ee453a189016de89883",
+      "enabled": true,
+      "category_tags": [
+        "猫砂",
+        "ペット トイレ",
+        "ペットシーツ"
+      ],
+      "category_scores": {
+        "猫砂": 100,
+        "ペット トイレ": 100,
+        "ペットシーツ": 40
+      },
+      "topic_tags": [
+        "ペット",
+        "猫"
+      ],
+      "theme": "CLEANING",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "cleaning"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_043",
+      "file": "43_にっこり歯みがき大作戦.png",
+      "sha256": "0589a6cc16bfa35c2ac5018880aa491bae7270eec5025c45bf1f1945485f8407",
+      "enabled": true,
+      "category_tags": [
+        "猫 フード",
+        "猫砂",
+        "ペットシーツ",
+        "犬 フード",
+        "犬 おやつ",
+        "猫 おやつ",
+        "犬 おもちゃ",
+        "猫 おもちゃ",
+        "ペット 自動給餌器",
+        "ペット 給水器",
+        "ペットカメラ",
+        "ペット トイレ"
+      ],
+      "category_scores": {
+        "猫 フード": 20,
+        "猫砂": 20,
+        "ペットシーツ": 20,
+        "犬 フード": 20,
+        "犬 おやつ": 20,
+        "猫 おやつ": 20,
+        "犬 おもちゃ": 20,
+        "猫 おもちゃ": 20,
+        "ペット 自動給餌器": 20,
+        "ペット 給水器": 20,
+        "ペットカメラ": 20,
+        "ペット トイレ": 20
+      },
+      "topic_tags": [
+        "ペット",
+        "犬",
+        "猫"
+      ],
+      "theme": "HEARTWARMING",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "pet_life"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_044",
+      "file": "44_仲良しふたりのふわふわベッド.png",
+      "sha256": "d2c8a732a5d504a8bd0b2a13542c76222679fc05d8502b213118585648e612d5",
+      "enabled": true,
+      "category_tags": [
+        "猫 フード",
+        "猫砂",
+        "ペットシーツ",
+        "犬 フード",
+        "犬 おやつ",
+        "猫 おやつ",
+        "犬 おもちゃ",
+        "猫 おもちゃ",
+        "ペット 自動給餌器",
+        "ペット 給水器",
+        "ペットカメラ",
+        "ペット トイレ"
+      ],
+      "category_scores": {
+        "猫 フード": 20,
+        "猫砂": 20,
+        "ペットシーツ": 20,
+        "犬 フード": 20,
+        "犬 おやつ": 20,
+        "猫 おやつ": 20,
+        "犬 おもちゃ": 20,
+        "猫 おもちゃ": 20,
+        "ペット 自動給餌器": 20,
+        "ペット 給水器": 20,
+        "ペットカメラ": 20,
+        "ペット トイレ": 20
+      },
+      "topic_tags": [
+        "ペット",
+        "犬",
+        "猫"
+      ],
+      "theme": "HEARTWARMING",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "pet_life"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_045",
+      "file": "45_ほっこり給水タイム漫画.png",
+      "sha256": "0b6ff49082d16036c969eab134199c1c231c718b99089c9b3c43f52bef57aa51",
+      "enabled": true,
+      "category_tags": [
+        "ペット 給水器",
+        "猫 フード",
+        "犬 フード"
+      ],
+      "category_scores": {
+        "ペット 給水器": 100,
+        "猫 フード": 25,
+        "犬 フード": 25
+      },
+      "topic_tags": [
+        "ペット",
+        "犬",
+        "猫"
+      ],
+      "theme": "UTILITY",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "utility"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_046",
+      "file": "46_毛布でぬくぬく仲良しタイム.png",
+      "sha256": "eab60c1a0dfb6d213ac8aa0fbb7c4dd76a0209205b70c0a7a02dbeb2088878d1",
+      "enabled": true,
+      "category_tags": [
+        "猫 フード",
+        "猫砂",
+        "ペットシーツ",
+        "犬 フード",
+        "犬 おやつ",
+        "猫 おやつ",
+        "犬 おもちゃ",
+        "猫 おもちゃ",
+        "ペット 自動給餌器",
+        "ペット 給水器",
+        "ペットカメラ",
+        "ペット トイレ"
+      ],
+      "category_scores": {
+        "猫 フード": 20,
+        "猫砂": 20,
+        "ペットシーツ": 20,
+        "犬 フード": 20,
+        "犬 おやつ": 20,
+        "猫 おやつ": 20,
+        "犬 おもちゃ": 20,
+        "猫 おもちゃ": 20,
+        "ペット 自動給餌器": 20,
+        "ペット 給水器": 20,
+        "ペットカメラ": 20,
+        "ペット トイレ": 20
+      },
+      "topic_tags": [
+        "ペット",
+        "犬",
+        "猫"
+      ],
+      "theme": "HEARTWARMING",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "pet_life"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_047",
+      "file": "47_ふかふかベッドで仲良しお昼寝.png",
+      "sha256": "f6a6fc195e1f9c82a0df5da864170b40d497e9739aced04d5f8f3728318f5b0c",
+      "enabled": true,
+      "category_tags": [
+        "猫 フード",
+        "猫砂",
+        "ペットシーツ",
+        "犬 フード",
+        "犬 おやつ",
+        "猫 おやつ",
+        "犬 おもちゃ",
+        "猫 おもちゃ",
+        "ペット 自動給餌器",
+        "ペット 給水器",
+        "ペットカメラ",
+        "ペット トイレ"
+      ],
+      "category_scores": {
+        "猫 フード": 20,
+        "猫砂": 20,
+        "ペットシーツ": 20,
+        "犬 フード": 20,
+        "犬 おやつ": 20,
+        "猫 おやつ": 20,
+        "犬 おもちゃ": 20,
+        "猫 おもちゃ": 20,
+        "ペット 自動給餌器": 20,
+        "ペット 給水器": 20,
+        "ペットカメラ": 20,
+        "ペット トイレ": 20
+      },
+      "topic_tags": [
+        "ペット",
+        "犬",
+        "猫"
+      ],
+      "theme": "HEARTWARMING",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "pet_life"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_048",
+      "file": "48_雨の日のおうち遊び日記.png",
+      "sha256": "bc630558091ebc4349050aa7d4798c281c13d34ced28e80d1e7b2d4cbbf0cf35",
+      "enabled": true,
+      "category_tags": [
+        "犬 おもちゃ",
+        "猫 おもちゃ"
+      ],
+      "category_scores": {
+        "犬 おもちゃ": 100,
+        "猫 おもちゃ": 100
+      },
+      "topic_tags": [
+        "犬",
+        "猫"
+      ],
+      "theme": "PLAY",
+      "mood": "funny",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "play"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_049",
+      "file": "49_ペットキャリーで仲良くおでかけ.png",
+      "sha256": "0b024c5e57e782971be956401df48fbaa4d50323a80a6557b0071af58aff4933",
+      "enabled": true,
+      "category_tags": [
+        "猫 フード",
+        "猫砂",
+        "ペットシーツ",
+        "犬 フード",
+        "犬 おやつ",
+        "猫 おやつ",
+        "犬 おもちゃ",
+        "猫 おもちゃ",
+        "ペット 自動給餌器",
+        "ペット 給水器",
+        "ペットカメラ",
+        "ペット トイレ"
+      ],
+      "category_scores": {
+        "猫 フード": 20,
+        "猫砂": 20,
+        "ペットシーツ": 20,
+        "犬 フード": 20,
+        "犬 おやつ": 20,
+        "猫 おやつ": 20,
+        "犬 おもちゃ": 20,
+        "猫 おもちゃ": 20,
+        "ペット 自動給餌器": 20,
+        "ペット 給水器": 20,
+        "ペットカメラ": 20,
+        "ペット トイレ": 20
+      },
+      "topic_tags": [
+        "ペット",
+        "犬",
+        "猫"
+      ],
+      "theme": "HEARTWARMING",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "pet_life"
+      ],
+      "reuse_cooldown_days": 30
+    },
+    {
+      "comic_id": "comic_050",
+      "file": "50_ひみつ会議のあとで一緒におやすみ.png",
+      "sha256": "dbbfcaa3b0537652074a1b970a97e7c793b9a436d1b9b4943cda551c275f6edd",
+      "enabled": true,
+      "category_tags": [
+        "猫 フード",
+        "猫砂",
+        "ペットシーツ",
+        "犬 フード",
+        "犬 おやつ",
+        "猫 おやつ",
+        "犬 おもちゃ",
+        "猫 おもちゃ",
+        "ペット 自動給餌器",
+        "ペット 給水器",
+        "ペットカメラ",
+        "ペット トイレ"
+      ],
+      "category_scores": {
+        "猫 フード": 20,
+        "猫砂": 20,
+        "ペットシーツ": 20,
+        "犬 フード": 20,
+        "犬 おやつ": 20,
+        "猫 おやつ": 20,
+        "犬 おもちゃ": 20,
+        "猫 おもちゃ": 20,
+        "ペット 自動給餌器": 20,
+        "ペット 給水器": 20,
+        "ペットカメラ": 20,
+        "ペット トイレ": 20
+      },
+      "topic_tags": [
+        "ペット",
+        "犬",
+        "猫"
+      ],
+      "theme": "HEARTWARMING",
+      "mood": "warm",
+      "characters": [
+        "CAT",
+        "DOG",
+        "OWNER"
+      ],
+      "scenario_tags": [
+        "pet_life"
+      ],
+      "reuse_cooldown_days": 30
+    }
+  ]
+}
