@@ -1,0 +1,306 @@
+{
+  "version": "comic_public_v1",
+  "base_url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1",
+  "items": [
+    {
+      "comic_id": "comic_001",
+      "file": "comic_001.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_001.png",
+      "sha256": "c4e75b668ddc7c5f723183331d45a22e9bdb397baa21dcb75ceeac48c888f65e"
+    },
+    {
+      "comic_id": "comic_002",
+      "file": "comic_002.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_002.png",
+      "sha256": "f97c02cbb1bf7a7bc2f56ac8364677f2884c1481f3feaefb43dd8f9107106c89"
+    },
+    {
+      "comic_id": "comic_003",
+      "file": "comic_003.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_003.png",
+      "sha256": "160c6afb643a799af9b842395c7033140a3fc90550c7cac08fbf368393ecc572"
+    },
+    {
+      "comic_id": "comic_004",
+      "file": "comic_004.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_004.png",
+      "sha256": "c33423a4b0440cb5e050cc64f1664c1105ed4b2e0c4f05cb335a4607ab566931"
+    },
+    {
+      "comic_id": "comic_005",
+      "file": "comic_005.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_005.png",
+      "sha256": "06bc704d6e7e2d6a121e5be778740d29bea9e1b3300d2f99b16d4098a5885b53"
+    },
+    {
+      "comic_id": "comic_006",
+      "file": "comic_006.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_006.png",
+      "sha256": "fea62b7b3256a48c223c5c8eaa07ac01e221378760761c8cf31df0e3aed46055"
+    },
+    {
+      "comic_id": "comic_007",
+      "file": "comic_007.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_007.png",
+      "sha256": "b653e926abe2f20852c3946f72ac6f0290c3c8b6df90aae59bb746a19b2d8abd"
+    },
+    {
+      "comic_id": "comic_008",
+      "file": "comic_008.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_008.png",
+      "sha256": "b4c84bfc77cb6e88de2c8eddc2d95a164ee5de9c6170a3e6fb6b7f1a1f6f0d5e"
+    },
+    {
+      "comic_id": "comic_009",
+      "file": "comic_009.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_009.png",
+      "sha256": "5489e68e3aa76cd0c125cb054cd206ca62494c712194c2377a048c5cbce94b72"
+    },
+    {
+      "comic_id": "comic_010",
+      "file": "comic_010.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_010.png",
+      "sha256": "4942191537166362772c898721dc67124a8f6f8fb2efcb9e3994f7a182111122"
+    },
+    {
+      "comic_id": "comic_011",
+      "file": "comic_011.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_011.png",
+      "sha256": "44ca66dde3d8109b3b4bc19bf032b4166be4032402eeee8ec032f449b5e3c0d6"
+    },
+    {
+      "comic_id": "comic_012",
+      "file": "comic_012.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_012.png",
+      "sha256": "5df23fcbe5597a412c7c57ffd2adb9c14faecf42883ddc469061b5706a2aef56"
+    },
+    {
+      "comic_id": "comic_013",
+      "file": "comic_013.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_013.png",
+      "sha256": "391444dca96df201052f9295917f60ca65c5d2477d775b15e059b732cba61baf"
+    },
+    {
+      "comic_id": "comic_014",
+      "file": "comic_014.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_014.png",
+      "sha256": "b81a7c65cca5519b586aef2d11e5808534e9184b70416a9e17cc89554a819287"
+    },
+    {
+      "comic_id": "comic_015",
+      "file": "comic_015.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_015.png",
+      "sha256": "011fbf725f4ca00011cf8d6d602bedb9ac37c3be633d3729c4d35a3a110b5b4d"
+    },
+    {
+      "comic_id": "comic_016",
+      "file": "comic_016.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_016.png",
+      "sha256": "b9ae7b1de76623b57e8c304ae63fa5e521423a83b0bed3c75e82cad99d73caab"
+    },
+    {
+      "comic_id": "comic_017",
+      "file": "comic_017.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_017.png",
+      "sha256": "5e41127cd55becd809de1a4128d43b0780beb763154becb099b6366128b3241e"
+    },
+    {
+      "comic_id": "comic_018",
+      "file": "comic_018.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_018.png",
+      "sha256": "d6e0a49d223badaeec751e774182871a5005599428d67ea323926fd3dc51a64c"
+    },
+    {
+      "comic_id": "comic_019",
+      "file": "comic_019.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_019.png",
+      "sha256": "8ff68f9ae6b7251da364ffb1dc5f2f132f45dc7e0bdce6ad1309c14ca50bc812"
+    },
+    {
+      "comic_id": "comic_020",
+      "file": "comic_020.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_020.png",
+      "sha256": "b9433cc42a15a47adf41b4ec9cb1c071666433c035411b74052c7317c5bc3b72"
+    },
+    {
+      "comic_id": "comic_021",
+      "file": "comic_021.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_021.png",
+      "sha256": "01da795dbc62b3ba00d70e120dbf9fb2929f5f73fedd232d4ec954335590f49e"
+    },
+    {
+      "comic_id": "comic_022",
+      "file": "comic_022.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_022.png",
+      "sha256": "d4662ee72500120b70cef2680c68768455c71d408c5139359270d8ee45950061"
+    },
+    {
+      "comic_id": "comic_023",
+      "file": "comic_023.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_023.png",
+      "sha256": "a734012cc07524af7bbf5679c3349911be01a764c46957cc796bdddf63b38f25"
+    },
+    {
+      "comic_id": "comic_024",
+      "file": "comic_024.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_024.png",
+      "sha256": "c549ffd8c6e53bb512fc6feee72720ed6f7d9caa9e410e9608255075af25b12b"
+    },
+    {
+      "comic_id": "comic_025",
+      "file": "comic_025.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_025.png",
+      "sha256": "2a6356b747650b2d60c2f6ea96a6e9f721b0313e406bbebde096f3f5a4e74fb1"
+    },
+    {
+      "comic_id": "comic_026",
+      "file": "comic_026.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_026.png",
+      "sha256": "b31be0fd265004220105c6d86eda21920b13a5e5acb3c48743863990062db9a1"
+    },
+    {
+      "comic_id": "comic_027",
+      "file": "comic_027.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_027.png",
+      "sha256": "56952dd7c9dbd6812320c159538b5acb70a08792a01cbe34726a2386077c2ad7"
+    },
+    {
+      "comic_id": "comic_028",
+      "file": "comic_028.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_028.png",
+      "sha256": "fc4cc551b3e1bdf803b7cc7a5f0d87408d2e79175535ae142606f82631a63eea"
+    },
+    {
+      "comic_id": "comic_029",
+      "file": "comic_029.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_029.png",
+      "sha256": "b71050d4d335ccb9675894f329f5e7fe54e8d2e583f1d367885fdc9def32ac58"
+    },
+    {
+      "comic_id": "comic_030",
+      "file": "comic_030.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_030.png",
+      "sha256": "7f5011147cad9c8ac26aa57c94413f851c7c5a671aa77a41de3b5c92cba3fc2c"
+    },
+    {
+      "comic_id": "comic_031",
+      "file": "comic_031.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_031.png",
+      "sha256": "d530907db2ff8b9ab3d1f092a3014069bb27501ff90a6a04128982319f3238d0"
+    },
+    {
+      "comic_id": "comic_032",
+      "file": "comic_032.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_032.png",
+      "sha256": "4a9b30e5a8e49a8621443575e20cb66344916ad4014b1cbaf4eb3de72cb34480"
+    },
+    {
+      "comic_id": "comic_033",
+      "file": "comic_033.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_033.png",
+      "sha256": "801af4a2d8369a690c671fbebff57a8e0b7193b8fb0f47e28e53485e6b9b60ce"
+    },
+    {
+      "comic_id": "comic_034",
+      "file": "comic_034.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_034.png",
+      "sha256": "31c4a1edef6410171c6d65b892e9ae0c12e3ff897a82276931f62b3d358aa8a1"
+    },
+    {
+      "comic_id": "comic_035",
+      "file": "comic_035.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_035.png",
+      "sha256": "2aaf2ec14b0acf1270abb4fdbf439f189437eda4ab07e0cfc4ddd7ba17313093"
+    },
+    {
+      "comic_id": "comic_036",
+      "file": "comic_036.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_036.png",
+      "sha256": "0e61ae7d78343ec58219436ee6997e3d6d8824f5f12bbcf706c363db416e01c9"
+    },
+    {
+      "comic_id": "comic_037",
+      "file": "comic_037.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_037.png",
+      "sha256": "989119204a696a3db133c51f2786d2a5151f2034257263318766f1eacbd3fb41"
+    },
+    {
+      "comic_id": "comic_038",
+      "file": "comic_038.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_038.png",
+      "sha256": "ddcaf7e5369a17ba927ac26c6ec25b366cca354f9496ce1bc1235e65eadce144"
+    },
+    {
+      "comic_id": "comic_039",
+      "file": "comic_039.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_039.png",
+      "sha256": "46f6965a62df44092f5fe53a7cdce0e975731b479a95ce89b88787349ff7f8c2"
+    },
+    {
+      "comic_id": "comic_040",
+      "file": "comic_040.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_040.png",
+      "sha256": "b81da04ce3670860d3dc2efc46abd32867b32899193c1ffd7d631607f13b19a7"
+    },
+    {
+      "comic_id": "comic_041",
+      "file": "comic_041.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_041.png",
+      "sha256": "74e090fe8abaf2ce6355260a44d1c71e0ff4a7d2864286e05559c3dd622874b7"
+    },
+    {
+      "comic_id": "comic_042",
+      "file": "comic_042.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_042.png",
+      "sha256": "5175b731887bb596d865ba7a67db83985b656ae6f2fc3ee453a189016de89883"
+    },
+    {
+      "comic_id": "comic_043",
+      "file": "comic_043.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_043.png",
+      "sha256": "0589a6cc16bfa35c2ac5018880aa491bae7270eec5025c45bf1f1945485f8407"
+    },
+    {
+      "comic_id": "comic_044",
+      "file": "comic_044.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_044.png",
+      "sha256": "d2c8a732a5d504a8bd0b2a13542c76222679fc05d8502b213118585648e612d5"
+    },
+    {
+      "comic_id": "comic_045",
+      "file": "comic_045.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_045.png",
+      "sha256": "0b6ff49082d16036c969eab134199c1c231c718b99089c9b3c43f52bef57aa51"
+    },
+    {
+      "comic_id": "comic_046",
+      "file": "comic_046.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_046.png",
+      "sha256": "eab60c1a0dfb6d213ac8aa0fbb7c4dd76a0209205b70c0a7a02dbeb2088878d1"
+    },
+    {
+      "comic_id": "comic_047",
+      "file": "comic_047.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_047.png",
+      "sha256": "f6a6fc195e1f9c82a0df5da864170b40d497e9739aced04d5f8f3728318f5b0c"
+    },
+    {
+      "comic_id": "comic_048",
+      "file": "comic_048.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_048.png",
+      "sha256": "bc630558091ebc4349050aa7d4798c281c13d34ced28e80d1e7b2d4cbbf0cf35"
+    },
+    {
+      "comic_id": "comic_049",
+      "file": "comic_049.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_049.png",
+      "sha256": "0b024c5e57e782971be956401df48fbaa4d50323a80a6557b0071af58aff4933"
+    },
+    {
+      "comic_id": "comic_050",
+      "file": "comic_050.png",
+      "url": "https://dsddfokl-byte.github.io/price-intelligence-agent/assets/comics/v1/comic_050.png",
+      "sha256": "dbbfcaa3b0537652074a1b970a97e7c793b9a436d1b9b4943cda551c275f6edd"
+    }
+  ]
+}
