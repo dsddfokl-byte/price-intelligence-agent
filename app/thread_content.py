@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo
 
 from app.config import PET_OWNER_TIPS_PATH, THREADS_PUBLISHING
 from app.models import Product
+from app.post_text import AFFILIATE_DISCLOSURE, normalize_affiliate_disclosure
 from app.publishers.title_formatter import shorten_product_title
 
 
@@ -175,11 +176,11 @@ def generate_experiment_text(
                 f"確認時価格：{price}\n"
                 f"{review_line}\n\n"
             )
-        return (
+        return normalize_affiliate_disclosure(
             body
             + "楽天市場で確認\n"
             + f"{product.affiliate_url}\n\n"
-            + "※本投稿にはアフィリエイトリンクが含まれます。"
+            + AFFILIATE_DISCLOSURE
         )
 
     text = render(title, tip_text, review)

@@ -11,6 +11,11 @@ from statistics import mean, median
 from typing import List, Optional, Protocol, Sequence, Tuple
 from zoneinfo import ZoneInfo
 
+from app.post_text import (
+    AFFILIATE_DISCLOSURE,
+    has_valid_affiliate_disclosure_layout,
+)
+
 
 EXPERIMENT_SEED = "rakuten-affiliate-agent-experiment-v1"
 DEEP_ENGAGEMENT_MIN_VIEWS = 50
@@ -465,11 +470,12 @@ def record_publish_result(
 
 
 def validate_publish_payload(text: str, affiliate_url: Optional[str]) -> None:
-    disclosure = "※本投稿にはアフィリエイトリンクが含まれます。"
-    if disclosure not in text:
+    if not has_valid_affiliate_disclosure_layout(text):
         raise StateValidationError("Affiliate disclosure validation failure")
     if not affiliate_url or affiliate_url not in text:
         raise StateValidationError("Affiliate URL validation failure")
+    if text.rfind(affiliate_url) > text.rfind(AFFILIATE_DISCLOSURE):
+        raise StateValidationError("Affiliate URL must precede disclosure")
     if len(text) > 500:
         raise StateValidationError("Threads text hard limit violation")
 

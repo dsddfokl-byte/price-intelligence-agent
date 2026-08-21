@@ -166,7 +166,10 @@ class ComicStockTests(unittest.TestCase):
             params={
                 "media_type": "IMAGE",
                 "image_url": "https://example.invalid/comic.png",
-                "text": "safe text",
+                "text": (
+                    "safe text\n\n"
+                    "※本投稿にはアフィリエイトリンクが含まれます。"
+                ),
                 "alt_text": "猫と犬の日常を描いた縦4コマ漫画",
                 "topic_tag": "猫",
             },

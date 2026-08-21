@@ -6,6 +6,11 @@ from dataclasses import dataclass
 from typing import Optional
 
 from app.publishers.threads import ThreadsAPIError, ThreadsPostError, ThreadsPublisher
+from app.config import THREADS_PUBLISHING
+from app.post_text import (
+    has_valid_affiliate_disclosure_layout,
+    normalize_affiliate_disclosure,
+)
 
 
 LOGGER = logging.getLogger("comic_media_publisher")
@@ -20,6 +25,12 @@ def build_image_container_payload(
 ) -> dict:
     if not public_image_url.startswith("https://"):
         raise ThreadsPostError("Threads image requires a public HTTPS image URL")
+    text = normalize_affiliate_disclosure(text)
+    if (
+        len(text) > THREADS_PUBLISHING.maximum_text_length
+        or not has_valid_affiliate_disclosure_layout(text)
+    ):
+        raise ThreadsPostError("Affiliate disclosure must be the final line")
     payload = {
         "media_type": "IMAGE",
         "image_url": public_image_url,
