@@ -80,7 +80,8 @@ class ThreadExperimentTests(unittest.TestCase):
                 "ペットカメラ": "ペット", "ペット トイレ": "ペット",
             },
         )
-        self.assertEqual(THREADS_PUBLISHING.daily_post_limit, 2)
+        self.assertEqual(THREADS_PUBLISHING.daily_post_limit, 4)
+        self.assertEqual(THREADS_PUBLISHING.cycle_post_limit, 1)
 
     def test_all_search_terms_have_topic_tags_and_owner_tips(self) -> None:
         search_terms = load_search_terms(SEARCH_TERMS_PATH)

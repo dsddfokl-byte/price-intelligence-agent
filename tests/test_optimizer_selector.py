@@ -299,7 +299,8 @@ class OptimizerSelectorTests(unittest.TestCase):
             self.assertEqual(analysis.ranking[0].historical_adjustment, 0)
 
     def test_existing_hard_configuration_is_unchanged(self) -> None:
-        self.assertEqual(THREADS_PUBLISHING.daily_post_limit, 2)
+        self.assertEqual(THREADS_PUBLISHING.daily_post_limit, 4)
+        self.assertEqual(THREADS_PUBLISHING.cycle_post_limit, 1)
         self.assertEqual(THREADS_PUBLISHING.minimum_deal_score, 75)
         self.assertEqual(THREADS_PUBLISHING.item_cooldown_days, 7)
         self.assertEqual(THREADS_PUBLISHING.text_cooldown_days, 30)

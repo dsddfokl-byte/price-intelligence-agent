@@ -190,7 +190,8 @@ class ComicStockTests(unittest.TestCase):
         self.assertTrue(COMIC_STOCK_ENABLED)
         self.assertTrue(COMIC_STOCK_PUBLISHING_ENABLED)
         self.assertEqual(THREADS_PUBLISHING.minimum_deal_score, 75)
-        self.assertEqual(THREADS_PUBLISHING.daily_post_limit, 2)
+        self.assertEqual(THREADS_PUBLISHING.daily_post_limit, 4)
+        self.assertEqual(THREADS_PUBLISHING.cycle_post_limit, 1)
 
 
 if __name__ == "__main__":

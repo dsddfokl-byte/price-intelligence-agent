@@ -61,7 +61,8 @@ class ComicCycleTests(unittest.TestCase):
         self.assertEqual(COMIC_MEDIA_EXPERIMENT_EPOCH, "v1")
         self.assertEqual(COMIC_MEDIA_MIN_SAMPLE, 10)
         self.assertEqual(THREADS_PUBLISHING.minimum_deal_score, 75)
-        self.assertEqual(THREADS_PUBLISHING.daily_post_limit, 2)
+        self.assertEqual(THREADS_PUBLISHING.daily_post_limit, 4)
+        self.assertEqual(THREADS_PUBLISHING.cycle_post_limit, 1)
 
     def test_assignment_is_stable_balanced_and_independent(self) -> None:
         self.assertEqual(assign_media_variant("shop:item", NOW.date()), assign_media_variant("shop:item", NOW.date()))

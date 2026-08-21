@@ -80,7 +80,8 @@ class ThreadsPublishingConfig:
     minimum_deal_score: float = 75.0
     minimum_review_count: int = 20
     candidate_limit: int = 5
-    daily_post_limit: int = 2
+    daily_post_limit: int = 4
+    cycle_post_limit: int = 1
     daily_timezone: str = "Asia/Tokyo"
     item_cooldown_days: int = 7
     price_drop_override: float = 0.10
