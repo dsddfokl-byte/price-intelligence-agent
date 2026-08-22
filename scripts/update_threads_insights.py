@@ -67,6 +67,15 @@ def main() -> int:
                             shares=insights.shares,
                             updated_at=datetime.now(timezone.utc).isoformat(),
                         )
+                        try:
+                            unique_repliers, conversation_depth = client.get_conversation_metrics(post_id)
+                            database.update_threads_conversation_metrics(
+                                post_id, unique_repliers, conversation_depth
+                            )
+                        except ThreadsInsightsError as error:
+                            LOGGER.warning(
+                                "Reply metrics unavailable post_id=%s error=%s", post_id, error
+                            )
                         updated += 1
                         totals["views"] += insights.views or 0
                         totals["likes"] += insights.likes or 0

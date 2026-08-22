@@ -24,7 +24,7 @@ from app.config import (
 
 WINDOW_DAYS = (1, 7, 14, 28)
 METRIC_NAMES = (
-    "views", "likes", "replies", "reposts", "quotes", "clicks",
+    "views", "likes", "replies", "reposts", "quotes", "shares", "clicks",
     "confirmed_orders", "confirmed_commission",
 )
 
@@ -172,6 +172,11 @@ def _dimension_summaries(rows: Sequence[sqlite3.Row]) -> Dict[str, Dict[str, Dim
         "category": lambda row: row["search_keyword"],
         "topic_tag": lambda row: row["topic_tag"],
         "posting_slot": lambda row: _posting_slot(row["posted_at"]),
+        "post_intent": lambda row: row["post_intent"],
+        "intent_media": lambda row: (
+            f"{row['post_intent']} × {row['delivered_media_variant']}"
+            if row["post_intent"] and row["delivered_media_variant"] else None
+        ),
     }
     result: Dict[str, Dict[str, DimensionStats]] = {}
     for dimension, extractor in extractors.items():
@@ -197,9 +202,9 @@ def compute_window_metrics(
     since = (now - timedelta(days=days)).isoformat()
     rows = connection.execute(
         """
-        SELECT posted_at, views, likes, replies, reposts, quotes, clicks,
+        SELECT posted_at, views, likes, replies, reposts, quotes, shares, clicks,
                confirmed_orders, confirmed_commission, delivered_media_variant,
-               comic_id, search_keyword, topic_tag
+               comic_id, search_keyword, topic_tag, post_intent
         FROM threads_posts
         WHERE status = 'published' AND posted_at >= ? AND posted_at <= ?
         ORDER BY posted_at

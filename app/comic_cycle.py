@@ -22,6 +22,7 @@ from app.comics.stock_selector import (
 )
 from app.config import COMIC_STOCK_PUBLISHING_ENABLED
 from app.post_text import normalize_affiliate_disclosure
+from app.post_intent import PostIntent
 from app.publishers.threads import ThreadsAPIError, ThreadsCandidate, ThreadsPostError
 
 
@@ -85,9 +86,10 @@ def _text_outcome(
     plan: ComicPlan,
     fallback_reason: Optional[str] = None,
 ) -> ComicPublishOutcome:
-    post_id = publisher.publish_text(
-        normalize_affiliate_disclosure(candidate.text), candidate.topic_tag
-    )
+    text = candidate.text
+    if getattr(candidate, "post_intent", PostIntent.AFFILIATE.value) == PostIntent.AFFILIATE.value:
+        text = normalize_affiliate_disclosure(text)
+    post_id = publisher.publish_text(text, candidate.topic_tag)
     permalink = None
     try:
         permalink = publisher.get_post_details(post_id).get("permalink")

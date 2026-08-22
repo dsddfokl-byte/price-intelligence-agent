@@ -7,7 +7,7 @@ import sqlite3
 import sys
 import os
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
@@ -43,11 +43,17 @@ from app.config import (  # noqa: E402
     RUN_CYCLE_LOCK_PATH,
     SEARCH_TERMS_PATH,
     THREADS_PUBLISHING,
+    POST_INTENT_EXPERIMENT_ENABLED,
     load_settings,
     load_threads_access_token,
 )
 from app.database import Database  # noqa: E402
+from app.growth_content import generate_growth_post, validate_growth_text  # noqa: E402
+from app.growth_optimizer import Bottleneck, diagnose  # noqa: E402
 from app.init import initialize_database  # noqa: E402
+from app.post_intent import (  # noqa: E402
+    PostIntent, assign_post_intent, ensure_post_intent_experiment,
+)
 from app.publishers.threads import (  # noqa: E402
     ThreadsAPIError,
     ThreadsPostError,
@@ -61,6 +67,9 @@ from app.optimizer_selector import (  # noqa: E402
 )
 from app.rakuten_client import RakutenAPIError, RakutenClient  # noqa: E402
 from app.run_lock import CycleLock, LockAlreadyHeld  # noqa: E402
+from app.topic_discovery import (  # noqa: E402
+    discover_growth_topic,
+)
 
 
 LOGGER = logging.getLogger("affiliate_automation")
@@ -291,11 +300,49 @@ def run_cycle(args: argparse.Namespace) -> int:
                         experiment_epoch=state.experiment_epoch,
                         experiment_arm=assigned_arm,
                     )
+                post_intent = PostIntent.AFFILIATE
+                growth_template = None
+                if (
+                    POST_INTENT_EXPERIMENT_ENABLED
+                    and diagnose(database.connection, now).current_bottleneck
+                    == Bottleneck.DISTRIBUTION
+                ):
+                    if not args.dry_run:
+                        ensure_post_intent_experiment(database.connection, now)
+                    post_intent = assign_post_intent(now)
+                if post_intent == PostIntent.GROWTH:
+                    try:
+                        growth_topic = candidate.topic_tag
+                        if not args.dry_run:
+                            growth_topic = discover_growth_topic(
+                                database, load_threads_access_token(), candidate.search_keyword,
+                                candidate.topic_tag, now,
+                            )
+                        growth_post = generate_growth_post(candidate, now, growth_topic)
+                        hash_since = (
+                            now - timedelta(days=THREADS_PUBLISHING.text_cooldown_days)
+                        ).isoformat()
+                        duplicate_growth = database.has_published_text_hash_since(
+                            growth_post.text_hash, hash_since
+                        )
+                    except (ConfigurationError, ThreadsAPIError, ValueError):
+                        LOGGER.warning("Growth fallback reason=generation_or_topic_error")
+                        post_intent = PostIntent.AFFILIATE
+                    else:
+                        if duplicate_growth:
+                            LOGGER.warning("Growth fallback reason=duplicate_text")
+                            post_intent = PostIntent.AFFILIATE
+                        else:
+                            candidate = growth_post
+                            growth_template = growth_post.template
                 try:
-                    validate_publish_payload(
-                        candidate.text, candidate.product.affiliate_url
-                    )
-                except StateValidationError as error:
+                    if post_intent == PostIntent.GROWTH:
+                        validate_growth_text(candidate.text)
+                    else:
+                        validate_publish_payload(
+                            candidate.text, candidate.product.affiliate_url
+                        )
+                except (StateValidationError, ValueError) as error:
                     controller.evaluate(
                         new_controller_evaluation_id(),
                         now=now,
@@ -360,6 +407,7 @@ def run_cycle(args: argparse.Namespace) -> int:
                             f"{optimizer_choice.optimizer_score:.2f}"
                         )
                     print(f"topic_tag: {candidate.topic_tag}")
+                    print(f"post_intent: {post_intent.value}")
                     print(f"template_variant: {candidate.template_variant}")
                     print(f"tip_id: {candidate.tip_id or 'N/A'}")
                     print(f"content_trigger: {candidate.content_trigger or 'N/A'}")
@@ -406,6 +454,8 @@ def run_cycle(args: argparse.Namespace) -> int:
                         assigned_media_variant=comic_plan.assigned_media_variant,
                         delivered_media_variant="NO_COMIC",
                         comic_media_experiment_epoch=COMIC_MEDIA_EXPERIMENT_EPOCH,
+                        post_intent=post_intent.value,
+                        growth_template=growth_template,
                     )
                     record_publish_result(database.connection, cycle_id, "failed")
                     LOGGER.error(
@@ -443,6 +493,8 @@ def run_cycle(args: argparse.Namespace) -> int:
                         assignment_key=assignment_key,
                         experiment_epoch=state.experiment_epoch,
                         comic_media_experiment_epoch=COMIC_MEDIA_EXPERIMENT_EPOCH,
+                        post_intent=post_intent.value,
+                        growth_template=growth_template,
                     )
                 else:
                     database.record_threads_post(
@@ -470,6 +522,8 @@ def run_cycle(args: argparse.Namespace) -> int:
                         delivered_media_variant=media_outcome.delivered_media_variant,
                         comic_media_experiment_epoch=COMIC_MEDIA_EXPERIMENT_EPOCH,
                         comic_fallback_reason=media_outcome.fallback_reason,
+                        post_intent=post_intent.value,
+                        growth_template=growth_template,
                     )
                 record_publish_result(database.connection, cycle_id, "published")
                 LOGGER.info(

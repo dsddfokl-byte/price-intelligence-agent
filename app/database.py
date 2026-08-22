@@ -89,6 +89,10 @@ CREATE TABLE IF NOT EXISTS threads_posts (
     media_hosting_provider TEXT,
     comic_media_experiment_epoch TEXT,
     comic_fallback_reason TEXT,
+    post_intent TEXT,
+    growth_template TEXT,
+    unique_repliers INTEGER,
+    conversation_depth INTEGER,
     FOREIGN KEY(item_code) REFERENCES products(item_code)
 );
 
@@ -290,6 +294,19 @@ CREATE TABLE IF NOT EXISTS growth_experiments (
 
 CREATE INDEX IF NOT EXISTS idx_growth_experiments_status
     ON growth_experiments(status, created_at);
+
+CREATE TABLE IF NOT EXISTS topic_search_cache (
+    cache_key TEXT PRIMARY KEY,
+    query TEXT NOT NULL,
+    search_mode TEXT NOT NULL,
+    search_type TEXT NOT NULL,
+    result_count INTEGER NOT NULL,
+    payload_json TEXT NOT NULL,
+    fetched_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_topic_search_cache_fetched
+    ON topic_search_cache(fetched_at);
 """
 
 EXPERIMENT_CYCLES_MIGRATION_COLUMNS = {
@@ -342,6 +359,10 @@ THREADS_INSIGHTS_MIGRATION_COLUMNS = {
     "media_hosting_provider": "TEXT",
     "comic_media_experiment_epoch": "TEXT",
     "comic_fallback_reason": "TEXT",
+    "post_intent": "TEXT",
+    "growth_template": "TEXT",
+    "unique_repliers": "INTEGER",
+    "conversation_depth": "INTEGER",
 }
 
 AUTOPILOT_STATE_MIGRATION_COLUMNS = {
@@ -526,6 +547,15 @@ class Database:
             (since,),
         ).fetchall()
 
+    def update_threads_conversation_metrics(
+        self, threads_post_id: str, unique_repliers: int, conversation_depth: int
+    ) -> None:
+        with self.connection:
+            self.connection.execute(
+                "UPDATE threads_posts SET unique_repliers=?, conversation_depth=? WHERE threads_post_id=?",
+                (unique_repliers, conversation_depth, threads_post_id),
+            )
+
     def update_threads_insights(
         self,
         threads_post_id: str,
@@ -696,6 +726,8 @@ class Database:
         media_hosting_provider: Optional[str] = None,
         comic_media_experiment_epoch: Optional[str] = None,
         comic_fallback_reason: Optional[str] = None,
+        post_intent: str = "AFFILIATE",
+        growth_template: Optional[str] = None,
     ) -> None:
         with self.connection:
             self.connection.execute(
@@ -708,8 +740,9 @@ class Database:
                     comic_id, comic_file, comic_stock_version,
                     assigned_media_variant, delivered_media_variant,
                     media_url, media_url_expires_at, media_hosting_provider,
-                    comic_media_experiment_epoch, comic_fallback_reason
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    comic_media_experiment_epoch, comic_fallback_reason,
+                    post_intent, growth_template
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     item_code,
@@ -738,6 +771,8 @@ class Database:
                     media_hosting_provider,
                     comic_media_experiment_epoch,
                     comic_fallback_reason,
+                    post_intent,
+                    growth_template,
                 ),
             )
 
@@ -804,6 +839,8 @@ class Database:
         assignment_key: Optional[str] = None,
         experiment_epoch: Optional[str] = None,
         comic_media_experiment_epoch: Optional[str] = None,
+        post_intent: str = "AFFILIATE",
+        growth_template: Optional[str] = None,
     ) -> None:
         """Atomically persist one successfully published comic post and usage."""
         with self.connection:
@@ -817,9 +854,9 @@ class Database:
                     comic_id, comic_file, comic_stock_version,
                     assigned_media_variant, delivered_media_variant,
                     media_url, media_hosting_provider,
-                    comic_media_experiment_epoch
+                    comic_media_experiment_epoch, post_intent, growth_template
                 ) VALUES (?, ?, ?, ?, ?, ?, 'published', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                          'COMIC', 'COMIC', ?, ?, ?)
+                          'COMIC', 'COMIC', ?, ?, ?, ?, ?)
                 """,
                 (
                     item_code, threads_post_id, posted_at, deal_score,
@@ -829,6 +866,7 @@ class Database:
                     comic_id, comic_file, comic_stock_version,
                     media_url, media_hosting_provider,
                     comic_media_experiment_epoch,
+                    post_intent, growth_template,
                 ),
             )
             self.connection.execute(

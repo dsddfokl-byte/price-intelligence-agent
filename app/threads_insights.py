@@ -2,7 +2,7 @@
 
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 import requests
 
@@ -137,3 +137,37 @@ class ThreadsInsightsClient:
             except (TypeError, ValueError):
                 values[str(metric["name"])] = None
         return PostInsights(**values)
+
+    def get_conversation_metrics(self, post_id: str) -> Tuple[int, int]:
+        """Return unique repliers and maximum reply depth for an owned post."""
+        try:
+            response = self.session.get(
+                f"{self.api_base_url}/{post_id}/conversation",
+                params={"fields": "id,username,replied_to,root_post", "reverse": "false"},
+                timeout=self.timeout,
+            )
+        except requests.RequestException:
+            raise ThreadsInsightsError("Threads replies API request failed") from None
+        if not 200 <= response.status_code < 300:
+            raise self._safe_error(response)
+        try:
+            payload = response.json()
+        except (requests.exceptions.JSONDecodeError, ValueError):
+            raise ThreadsInsightsError("Threads replies API returned invalid JSON") from None
+        data = payload.get("data") if isinstance(payload, dict) else None
+        if not isinstance(data, list):
+            raise ThreadsInsightsError("Threads replies API returned an unexpected JSON structure")
+        usernames = {str(item["username"]) for item in data if isinstance(item, dict) and item.get("username")}
+        by_id = {str(item["id"]): item for item in data if isinstance(item, dict) and item.get("id")}
+        maximum_depth = 0
+        for item in by_id.values():
+            depth, seen, current = 1, set(), item
+            while isinstance(current.get("replied_to"), dict):
+                parent_id = str(current["replied_to"].get("id", ""))
+                if not parent_id or parent_id in seen or parent_id not in by_id:
+                    break
+                seen.add(parent_id)
+                depth += 1
+                current = by_id[parent_id]
+            maximum_depth = max(maximum_depth, depth)
+        return len(usernames), maximum_depth
