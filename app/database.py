@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import AbstractSet, Iterable, Optional
 
 from app.models import Product
+from app.config import GROWTH_POLICY_INITIAL_VERSION
 
 
 SCHEMA = """
@@ -93,6 +94,7 @@ CREATE TABLE IF NOT EXISTS threads_posts (
     growth_template TEXT,
     unique_repliers INTEGER,
     conversation_depth INTEGER,
+    growth_policy_version TEXT,
     FOREIGN KEY(item_code) REFERENCES products(item_code)
 );
 
@@ -294,6 +296,9 @@ CREATE TABLE IF NOT EXISTS growth_experiments (
 
 CREATE INDEX IF NOT EXISTS idx_growth_experiments_status
     ON growth_experiments(status, created_at);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_growth_one_active
+    ON growth_experiments((1))
+    WHERE status IN ('PLANNED','RUNNING','INSUFFICIENT_SAMPLE','READY_FOR_EVALUATION');
 
 CREATE TABLE IF NOT EXISTS topic_search_cache (
     cache_key TEXT PRIMARY KEY,
@@ -307,6 +312,56 @@ CREATE TABLE IF NOT EXISTS topic_search_cache (
 
 CREATE INDEX IF NOT EXISTS idx_topic_search_cache_fetched
     ON topic_search_cache(fetched_at);
+
+CREATE TABLE IF NOT EXISTS growth_policies (
+    policy_version TEXT PRIMARY KEY,
+    status TEXT NOT NULL,
+    values_json TEXT NOT NULL,
+    adopted_experiment_id TEXT,
+    reason TEXT NOT NULL,
+    baseline_metrics_json TEXT,
+    created_at TEXT NOT NULL,
+    activated_at TEXT,
+    deactivated_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS growth_policy_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    action TEXT NOT NULL,
+    from_policy TEXT,
+    to_policy TEXT NOT NULL,
+    field_name TEXT,
+    previous_value TEXT,
+    new_value TEXT,
+    experiment_id TEXT,
+    reason TEXT NOT NULL,
+    sample_size INTEGER,
+    effect_size REAL,
+    metrics_json TEXT,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS growth_rollbacks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    from_policy TEXT NOT NULL,
+    to_policy TEXT NOT NULL,
+    reason TEXT NOT NULL,
+    metrics_json TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS growth_decision_audits (
+    audit_id TEXT PRIMARY KEY,
+    experiment_id TEXT,
+    decision TEXT NOT NULL,
+    valid INTEGER NOT NULL,
+    reason TEXT NOT NULL,
+    evidence_json TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_growth_policy_history_created
+    ON growth_policy_history(created_at);
 """
 
 EXPERIMENT_CYCLES_MIGRATION_COLUMNS = {
@@ -363,6 +418,7 @@ THREADS_INSIGHTS_MIGRATION_COLUMNS = {
     "growth_template": "TEXT",
     "unique_repliers": "INTEGER",
     "conversation_depth": "INTEGER",
+    "growth_policy_version": "TEXT",
 }
 
 AUTOPILOT_STATE_MIGRATION_COLUMNS = {
@@ -728,6 +784,7 @@ class Database:
         comic_fallback_reason: Optional[str] = None,
         post_intent: str = "AFFILIATE",
         growth_template: Optional[str] = None,
+        growth_policy_version: str = GROWTH_POLICY_INITIAL_VERSION,
     ) -> None:
         with self.connection:
             self.connection.execute(
@@ -741,8 +798,8 @@ class Database:
                     assigned_media_variant, delivered_media_variant,
                     media_url, media_url_expires_at, media_hosting_provider,
                     comic_media_experiment_epoch, comic_fallback_reason,
-                    post_intent, growth_template
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    post_intent, growth_template, growth_policy_version
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     item_code,
@@ -773,6 +830,7 @@ class Database:
                     comic_fallback_reason,
                     post_intent,
                     growth_template,
+                    growth_policy_version,
                 ),
             )
 
@@ -841,6 +899,7 @@ class Database:
         comic_media_experiment_epoch: Optional[str] = None,
         post_intent: str = "AFFILIATE",
         growth_template: Optional[str] = None,
+        growth_policy_version: str = GROWTH_POLICY_INITIAL_VERSION,
     ) -> None:
         """Atomically persist one successfully published comic post and usage."""
         with self.connection:
@@ -854,9 +913,10 @@ class Database:
                     comic_id, comic_file, comic_stock_version,
                     assigned_media_variant, delivered_media_variant,
                     media_url, media_hosting_provider,
-                    comic_media_experiment_epoch, post_intent, growth_template
+                    comic_media_experiment_epoch, post_intent, growth_template,
+                    growth_policy_version
                 ) VALUES (?, ?, ?, ?, ?, ?, 'published', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                          'COMIC', 'COMIC', ?, ?, ?, ?, ?)
+                          'COMIC', 'COMIC', ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     item_code, threads_post_id, posted_at, deal_score,
@@ -867,6 +927,7 @@ class Database:
                     media_url, media_hosting_provider,
                     comic_media_experiment_epoch,
                     post_intent, growth_template,
+                    growth_policy_version,
                 ),
             )
             self.connection.execute(

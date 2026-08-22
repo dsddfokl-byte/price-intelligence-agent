@@ -26,6 +26,9 @@ from app.growth_optimizer import (  # noqa: E402
     GrowthExperimentRegistry, diagnose, distribution_stats,
     evaluate_views_experiment,
 )
+from app.growth_controller import (  # noqa: E402
+    BoundedGrowthController, bounded_auto_eligibility, current_policy_version,
+)
 
 
 def value(number: object, digits: int = 2) -> str:
@@ -36,6 +39,8 @@ def main() -> int:
     now = datetime.now(timezone.utc)
     with Database(DATABASE_PATH) as database:
         diagnosis = diagnose(database.connection, now)
+        controller_decision = BoundedGrowthController(database.connection).evaluate(now)
+        bounded_eligibility = bounded_auto_eligibility(database.connection)
         metrics = diagnosis.windows[7]
         try:
             active = GrowthExperimentRegistry(database.connection).active()
@@ -51,6 +56,10 @@ def main() -> int:
         print(f"POST_INTENT_SPLIT={POST_INTENT_SPLIT}")
         print(f"POST_INTENT_EPOCH={POST_INTENT_EPOCH}")
         print(f"CURRENT_BOTTLENECK={diagnosis.current_bottleneck.value}")
+        print(f"BOUNDED_AUTO_ELIGIBLE={str(bounded_eligibility.eligible).lower()}")
+        print(f"CURRENT_POLICY_VERSION={current_policy_version(database.connection)}")
+        print(f"NEXT_BOUNDED_EXPERIMENT={controller_decision.next_experiment or 'NONE'}")
+        print(f"ROLLBACK_ENABLED=true")
         print(f"7D_POSTS={metrics.posts}")
         print(f"MEDIAN_VIEWS={value(metrics.distribution.median)}")
         print(f"P75_VIEWS={value(metrics.distribution.p75)}")

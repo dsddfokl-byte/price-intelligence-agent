@@ -49,6 +49,11 @@ from app.config import (  # noqa: E402
 )
 from app.database import Database  # noqa: E402
 from app.growth_content import generate_growth_post, validate_growth_text  # noqa: E402
+from app.growth_controller import (  # noqa: E402
+    BoundedGrowthController,
+    current_policy_version,
+    ensure_initial_policy,
+)
 from app.growth_optimizer import Bottleneck, diagnose  # noqa: E402
 from app.init import initialize_database  # noqa: E402
 from app.post_intent import (  # noqa: E402
@@ -136,6 +141,20 @@ def run_cycle(args: argparse.Namespace) -> int:
         try:
             with Database(settings.database_path) as database:
                 initialize_database(database)
+                controller_now = datetime.now(timezone.utc)
+                ensure_initial_policy(database.connection, controller_now)
+                growth_decision = BoundedGrowthController(database.connection).evaluate(
+                    controller_now
+                )
+                growth_policy_version = current_policy_version(database.connection)
+                LOGGER.info(
+                    "Growth controller mode=%s bottleneck=%s active=%s next=%s mutation=%s",
+                    growth_decision.mode,
+                    growth_decision.bottleneck.value,
+                    growth_decision.active_experiment,
+                    growth_decision.next_experiment,
+                    growth_decision.mutation_applied,
+                )
 
                 if not args.no_collect:
                     with RakutenClient(settings) as client:
@@ -456,6 +475,7 @@ def run_cycle(args: argparse.Namespace) -> int:
                         comic_media_experiment_epoch=COMIC_MEDIA_EXPERIMENT_EPOCH,
                         post_intent=post_intent.value,
                         growth_template=growth_template,
+                        growth_policy_version=growth_policy_version,
                     )
                     record_publish_result(database.connection, cycle_id, "failed")
                     LOGGER.error(
@@ -495,6 +515,7 @@ def run_cycle(args: argparse.Namespace) -> int:
                         comic_media_experiment_epoch=COMIC_MEDIA_EXPERIMENT_EPOCH,
                         post_intent=post_intent.value,
                         growth_template=growth_template,
+                        growth_policy_version=growth_policy_version,
                     )
                 else:
                     database.record_threads_post(
@@ -524,6 +545,7 @@ def run_cycle(args: argparse.Namespace) -> int:
                         comic_fallback_reason=media_outcome.fallback_reason,
                         post_intent=post_intent.value,
                         growth_template=growth_template,
+                        growth_policy_version=growth_policy_version,
                     )
                 record_publish_result(database.connection, cycle_id, "published")
                 LOGGER.info(
