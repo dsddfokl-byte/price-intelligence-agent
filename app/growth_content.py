@@ -3,9 +3,11 @@
 import hashlib
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
+from typing import Mapping, Optional, Sequence
+from zoneinfo import ZoneInfo
 
 from app.config import THREADS_PUBLISHING
+from app.models import Product
 from app.post_intent import PostIntent
 from app.publishers.threads import ThreadsCandidate, post_text_hash
 
@@ -88,6 +90,48 @@ def generate_growth_post(candidate: ThreadsCandidate, now: datetime, topic_tag: 
     if len(text) > THREADS_PUBLISHING.maximum_text_length:
         raise ValueError("Growth post exceeds Threads text limit")
     return GrowthPost(candidate, text, post_text_hash(text), template, topic_tag)
+
+
+def generate_generic_growth_post(
+    now: datetime,
+    categories: Sequence[str],
+    topic_tags: Mapping[str, str],
+) -> GrowthPost:
+    """Build a Growth post without an affiliate-product dependency."""
+    if not categories:
+        raise ValueError("Growth categories must not be empty")
+    local = now.astimezone(ZoneInfo(THREADS_PUBLISHING.daily_timezone))
+    slot = min((7, 12, 17, 21), key=lambda hour: abs(hour - local.hour))
+    seed = f"growth-source-v1|{local.date().isoformat()}|{slot}"
+    digest = hashlib.sha256(seed.encode()).digest()
+    category = categories[digest[0] % len(categories)]
+    content_key = f"growth:{local.date().isoformat()}:{slot}:{category}"
+    source = ThreadsCandidate(
+        product=Product(
+            item_code=content_key,
+            item_name=f"Growth content: {category}",
+            item_price=None,
+            shop_code=None,
+            shop_name=None,
+            item_url=None,
+            affiliate_url=None,
+            review_average=None,
+            review_count=None,
+            affiliate_rate=None,
+            availability=None,
+            fetched_at=now.isoformat(),
+        ),
+        deal_score=0.0,
+        text="",
+        text_hash="",
+        reason="generic_growth_source",
+        search_keyword=category,
+        topic_tag=topic_tags.get(category, "ペット"),
+        template_variant="GROWTH",
+        tip_id=None,
+        content_trigger=None,
+    )
+    return generate_growth_post(source, now, source.topic_tag)
 
 
 def validate_growth_text(text: str) -> None:

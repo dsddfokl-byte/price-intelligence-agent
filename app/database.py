@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS collections (
 
 CREATE TABLE IF NOT EXISTS threads_posts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    item_code TEXT NOT NULL,
+    item_code TEXT,
     threads_post_id TEXT,
     posted_at TEXT NOT NULL,
     deal_score REAL NOT NULL,
@@ -452,6 +452,44 @@ class Database:
             self._ensure_columns("comic_usage", COMIC_USAGE_MIGRATION_COLUMNS)
             self._ensure_columns("autopilot_state", AUTOPILOT_STATE_MIGRATION_COLUMNS)
             self._ensure_columns("experiment_cycles", EXPERIMENT_CYCLES_MIGRATION_COLUMNS)
+        self._allow_growth_posts_without_product()
+
+    def _allow_growth_posts_without_product(self) -> None:
+        """Idempotently make threads_posts.item_code nullable for Growth posts."""
+        columns = self.connection.execute("PRAGMA table_info(threads_posts)").fetchall()
+        item_code = next(row for row in columns if row["name"] == "item_code")
+        if not item_code["notnull"]:
+            return
+        table_sql = self.connection.execute(
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name='threads_posts'"
+        ).fetchone()["sql"]
+        replacement = table_sql.replace(
+            "CREATE TABLE threads_posts", "CREATE TABLE threads_posts_new", 1
+        ).replace("item_code TEXT NOT NULL", "item_code TEXT", 1)
+        self.connection.commit()
+        self.connection.execute("PRAGMA foreign_keys = OFF")
+        try:
+            self.connection.execute("BEGIN IMMEDIATE")
+            self.connection.execute(replacement)
+            self.connection.execute(
+                "INSERT INTO threads_posts_new SELECT * FROM threads_posts"
+            )
+            self.connection.execute("DROP TABLE threads_posts")
+            self.connection.execute(
+                "ALTER TABLE threads_posts_new RENAME TO threads_posts"
+            )
+            self.connection.execute(
+                "CREATE INDEX idx_threads_posts_item_code ON threads_posts(item_code)"
+            )
+            self.connection.execute(
+                "CREATE INDEX idx_threads_posts_posted_at ON threads_posts(posted_at)"
+            )
+            self.connection.commit()
+        except Exception:
+            self.connection.rollback()
+            raise
+        finally:
+            self.connection.execute("PRAGMA foreign_keys = ON")
 
     def _ensure_columns(self, table: str, columns: dict) -> None:
         existing = {
@@ -756,7 +794,7 @@ class Database:
 
     def record_threads_post(
         self,
-        item_code: str,
+        item_code: Optional[str],
         threads_post_id: Optional[str],
         posted_at: str,
         deal_score: float,
@@ -874,7 +912,7 @@ class Database:
     def record_published_comic_post(
         self,
         *,
-        item_code: str,
+        item_code: Optional[str],
         threads_post_id: str,
         posted_at: str,
         deal_score: float,
@@ -900,6 +938,7 @@ class Database:
         post_intent: str = "AFFILIATE",
         growth_template: Optional[str] = None,
         growth_policy_version: str = GROWTH_POLICY_INITIAL_VERSION,
+        usage_item_code: Optional[str] = None,
     ) -> None:
         """Atomically persist one successfully published comic post and usage."""
         with self.connection:
@@ -939,7 +978,8 @@ class Database:
                 ) VALUES (?, ?, ?, ?, ?, ?, 'COMIC', 'COMIC', ?, ?, ?)
                 """,
                 (
-                    comic_id, threads_post_id, item_code, search_keyword,
+                    comic_id, threads_post_id, usage_item_code or item_code or "growth",
+                    search_keyword,
                     selected_at, posted_at, selection_score, selection_reason,
                     comic_media_experiment_epoch,
                 ),

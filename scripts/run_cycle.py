@@ -44,11 +44,17 @@ from app.config import (  # noqa: E402
     SEARCH_TERMS_PATH,
     THREADS_PUBLISHING,
     POST_INTENT_EXPERIMENT_ENABLED,
+    POST_INTENT_EPOCH,
+    THREADS_TOPIC_TAGS,
     load_settings,
     load_threads_access_token,
 )
 from app.database import Database  # noqa: E402
-from app.growth_content import generate_growth_post, validate_growth_text  # noqa: E402
+from app.growth_content import (  # noqa: E402
+    generate_generic_growth_post,
+    generate_growth_post,
+    validate_growth_text,
+)
 from app.growth_controller import (  # noqa: E402
     BoundedGrowthController,
     current_policy_version,
@@ -260,65 +266,6 @@ def run_cycle(args: argparse.Namespace) -> int:
                 if policy.force_control:
                     assigned_arm = ExperimentArm.CONTROL
                     formal_experiment = False
-                candidates = find_eligible_candidates(
-                    database, THREADS_PUBLISHING, now
-                )
-                LOGGER.info("Candidates selected candidate_count=%d", len(candidates))
-                if not candidates:
-                    LOGGER.info("Post skipped reason=no_publishable_candidate")
-                    return 0
-
-                production_candidate = candidates[0]
-                optimizer = PerformanceOptimizerSelector(database.connection)
-                if args.dry_run:
-                    run_mode = "dry_run"
-                elif state.execution_state == ExecutionState.SHADOW:
-                    run_mode = "shadow"
-                else:
-                    run_mode = f"{state.execution_state.value.lower()}_{assigned_arm.value.lower()}"
-                optimizer_choice = None
-                try:
-                    analysis = optimizer.analyze(
-                        candidates,
-                        decided_at=now,
-                        reward_mode=state.reward_mode,
-                    )
-                    optimizer.persist_scores(
-                        analysis,
-                        cycle_id=cycle_id,
-                        run_mode=run_mode,
-                        decided_at=now,
-                        reward_mode=state.reward_mode,
-                        experiment_epoch=state.experiment_epoch,
-                    )
-                    optimizer_choice = analysis.ranking[0] if analysis.ranking else None
-                    candidate, selected_by = choose_candidate_for_arm(
-                        candidates, analysis, state, assigned_arm
-                    )
-                    selector_used = selected_by
-                except sqlite3.Error:
-                    raise
-                except Exception as error:
-                    state = controller.evaluate(
-                        new_controller_evaluation_id(),
-                        now=now,
-                        optimizer_error=type(error).__name__,
-                    )
-                    selector_used = "FALLBACK_CONTROL"
-                    formal_experiment = False
-                    candidate = production_candidate
-                if optimizer_choice is not None:
-                    optimizer.persist_decision(
-                        cycle_id=cycle_id,
-                        run_mode=run_mode,
-                        decided_at=now,
-                        production_item_code=production_candidate.product.item_code,
-                        optimizer_choice=optimizer_choice,
-                        selected_item_code=candidate.product.item_code,
-                        reward_mode=state.reward_mode,
-                        experiment_epoch=state.experiment_epoch,
-                        experiment_arm=assigned_arm,
-                    )
                 post_intent = PostIntent.AFFILIATE
                 growth_template = None
                 if (
@@ -329,14 +276,29 @@ def run_cycle(args: argparse.Namespace) -> int:
                     if not args.dry_run:
                         ensure_post_intent_experiment(database.connection, now)
                     post_intent = assign_post_intent(now)
+                LOGGER.info(
+                    "Intent assigned post_intent=%s intent_assignment_epoch=%s",
+                    post_intent.value,
+                    POST_INTENT_EPOCH,
+                )
+
+                candidates = []
+                production_candidate = None
+                optimizer_choice = None
                 if post_intent == PostIntent.GROWTH:
                     try:
+                        candidate = generate_generic_growth_post(
+                            now, search_terms, THREADS_TOPIC_TAGS
+                        )
                         growth_topic = candidate.topic_tag
                         if not args.dry_run:
-                            growth_topic = discover_growth_topic(
-                                database, load_threads_access_token(), candidate.search_keyword,
-                                candidate.topic_tag, now,
-                            )
+                            try:
+                                growth_topic = discover_growth_topic(
+                                    database, load_threads_access_token(),
+                                    candidate.search_keyword, candidate.topic_tag, now,
+                                )
+                            except (ConfigurationError, ThreadsAPIError):
+                                LOGGER.warning("Growth topic fallback source=generic")
                         growth_post = generate_growth_post(candidate, now, growth_topic)
                         hash_since = (
                             now - timedelta(days=THREADS_PUBLISHING.text_cooldown_days)
@@ -344,16 +306,90 @@ def run_cycle(args: argparse.Namespace) -> int:
                         duplicate_growth = database.has_published_text_hash_since(
                             growth_post.text_hash, hash_since
                         )
-                    except (ConfigurationError, ThreadsAPIError, ValueError):
-                        LOGGER.warning("Growth fallback reason=generation_or_topic_error")
-                        post_intent = PostIntent.AFFILIATE
+                    except ValueError:
+                        LOGGER.info(
+                            "Post skipped post_intent=GROWTH growth_candidate_available=false "
+                            "publish_attempted=false skip_reason=GROWTH_SKIP_GENERATION_FAILED"
+                        )
+                        print("実行結果: GROWTH_SKIP_GENERATION_FAILED", flush=True)
+                        return 0
                     else:
                         if duplicate_growth:
-                            LOGGER.warning("Growth fallback reason=duplicate_text")
-                            post_intent = PostIntent.AFFILIATE
+                            LOGGER.info(
+                                "Post skipped post_intent=GROWTH growth_candidate_available=true "
+                                "publish_attempted=false skip_reason=GROWTH_SKIP_DUPLICATE_TEXT"
+                            )
+                            print("実行結果: GROWTH_SKIP_DUPLICATE_TEXT", flush=True)
+                            return 0
                         else:
                             candidate = growth_post
                             growth_template = growth_post.template
+                            LOGGER.info(
+                                "Growth candidate candidate_source=generic_pet_content "
+                                "affiliate_candidate_count=not_required growth_candidate_available=true"
+                            )
+                else:
+                    candidates = find_eligible_candidates(
+                        database, THREADS_PUBLISHING, now
+                    )
+                    LOGGER.info(
+                        "Affiliate candidates post_intent=AFFILIATE "
+                        "candidate_source=eligible_products affiliate_candidate_count=%d "
+                        "growth_candidate_available=not_applicable",
+                        len(candidates),
+                    )
+                    if not candidates:
+                        LOGGER.info(
+                            "Post skipped post_intent=AFFILIATE publish_attempted=false "
+                            "skip_reason=AFFILIATE_SKIP_NO_ELIGIBLE_PRODUCT"
+                        )
+                        print(
+                            "実行結果: AFFILIATE_SKIP_NO_ELIGIBLE_PRODUCT",
+                            flush=True,
+                        )
+                        return 0
+                    production_candidate = candidates[0]
+                    optimizer = PerformanceOptimizerSelector(database.connection)
+                    if args.dry_run:
+                        run_mode = "dry_run"
+                    elif state.execution_state == ExecutionState.SHADOW:
+                        run_mode = "shadow"
+                    else:
+                        run_mode = f"{state.execution_state.value.lower()}_{assigned_arm.value.lower()}"
+                    try:
+                        analysis = optimizer.analyze(
+                            candidates, decided_at=now, reward_mode=state.reward_mode
+                        )
+                        optimizer.persist_scores(
+                            analysis, cycle_id=cycle_id, run_mode=run_mode,
+                            decided_at=now, reward_mode=state.reward_mode,
+                            experiment_epoch=state.experiment_epoch,
+                        )
+                        optimizer_choice = analysis.ranking[0] if analysis.ranking else None
+                        candidate, selected_by = choose_candidate_for_arm(
+                            candidates, analysis, state, assigned_arm
+                        )
+                        selector_used = selected_by
+                    except sqlite3.Error:
+                        raise
+                    except Exception as error:
+                        state = controller.evaluate(
+                            new_controller_evaluation_id(), now=now,
+                            optimizer_error=type(error).__name__,
+                        )
+                        selector_used = "FALLBACK_CONTROL"
+                        formal_experiment = False
+                        candidate = production_candidate
+                    if optimizer_choice is not None:
+                        optimizer.persist_decision(
+                            cycle_id=cycle_id, run_mode=run_mode, decided_at=now,
+                            production_item_code=production_candidate.product.item_code,
+                            optimizer_choice=optimizer_choice,
+                            selected_item_code=candidate.product.item_code,
+                            reward_mode=state.reward_mode,
+                            experiment_epoch=state.experiment_epoch,
+                            experiment_arm=assigned_arm,
+                        )
                 try:
                     if post_intent == PostIntent.GROWTH:
                         validate_growth_text(candidate.text)
@@ -370,6 +406,11 @@ def run_cycle(args: argparse.Namespace) -> int:
                     )
                     LOGGER.critical("Post blocked reason=payload_safety_validation")
                     return 1
+                persisted_item_code = (
+                    None
+                    if post_intent == PostIntent.GROWTH
+                    else candidate.product.item_code
+                )
                 if not args.dry_run:
                     record_experiment_assignment(
                         database.connection,
@@ -402,6 +443,12 @@ def run_cycle(args: argparse.Namespace) -> int:
                     for row in database.comic_usage_rows()
                 )
                 comic_plan = build_comic_plan(candidate, now=now, usages=usages)
+                LOGGER.info(
+                    "Media planned post_intent=%s selected_comic_id=%s publish_attempted=%s",
+                    post_intent.value,
+                    comic_plan.selection.comic_id or "none",
+                    not args.dry_run,
+                )
 
                 if args.dry_run:
                     LOGGER.info("Post skipped reason=dry_run")
@@ -410,7 +457,7 @@ def run_cycle(args: argparse.Namespace) -> int:
                     print(f"deal_score: {candidate.deal_score:.2f}")
                     print(
                         "production_selector: "
-                        f"{production_candidate.product.item_code}"
+                        f"{production_candidate.product.item_code if production_candidate else 'not_required'}"
                     )
                     if optimizer_choice is not None:
                         print(
@@ -449,7 +496,7 @@ def run_cycle(args: argparse.Namespace) -> int:
                 except (ConfigurationError, ThreadsAPIError, ThreadsPostError) as error:
                     selection = comic_plan.selection
                     database.record_threads_post(
-                        item_code=candidate.product.item_code,
+                        item_code=persisted_item_code,
                         threads_post_id=None,
                         posted_at=now.isoformat(),
                         deal_score=candidate.deal_score,
@@ -490,7 +537,8 @@ def run_cycle(args: argparse.Namespace) -> int:
                     assert selection.comic_id and selection.file_path
                     assert media_outcome.hosted is not None
                     database.record_published_comic_post(
-                        item_code=candidate.product.item_code,
+                        item_code=persisted_item_code,
+                        usage_item_code=candidate.product.item_code,
                         threads_post_id=post_id,
                         posted_at=now.isoformat(),
                         deal_score=candidate.deal_score,
@@ -519,7 +567,7 @@ def run_cycle(args: argparse.Namespace) -> int:
                     )
                 else:
                     database.record_threads_post(
-                        item_code=candidate.product.item_code,
+                        item_code=persisted_item_code,
                         threads_post_id=post_id,
                         posted_at=now.isoformat(),
                         deal_score=candidate.deal_score,
