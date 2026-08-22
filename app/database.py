@@ -270,6 +270,26 @@ CREATE INDEX IF NOT EXISTS idx_comic_usage_comic_selected
     ON comic_usage(comic_id, selected_at);
 CREATE INDEX IF NOT EXISTS idx_comic_usage_item
     ON comic_usage(item_code, comic_id);
+
+CREATE TABLE IF NOT EXISTS growth_experiments (
+    experiment_id TEXT PRIMARY KEY,
+    experiment_family TEXT NOT NULL,
+    epoch TEXT NOT NULL,
+    status TEXT NOT NULL,
+    control_arm TEXT NOT NULL,
+    treatment_arm TEXT NOT NULL,
+    started_at TEXT,
+    ended_at TEXT,
+    primary_metric TEXT NOT NULL,
+    minimum_samples_per_arm INTEGER NOT NULL,
+    minimum_runtime_days INTEGER NOT NULL,
+    decision TEXT,
+    decision_reason TEXT,
+    created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_growth_experiments_status
+    ON growth_experiments(status, created_at);
 """
 
 EXPERIMENT_CYCLES_MIGRATION_COLUMNS = {
