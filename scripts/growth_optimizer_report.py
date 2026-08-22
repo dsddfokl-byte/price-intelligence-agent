@@ -109,27 +109,30 @@ def main() -> int:
                     f"observed_views={stats.observed_views} "
                     f"median_views={value(stats.median_views)}"
                 )
-        print("\nPOST_INTENT_14D")
+        print("\nPOST_INTENT_DELIVERED_14D")
         intent_rows = database.connection.execute(
             """
-            SELECT post_intent, COUNT(*) posts, AVG(replies) replies_per_post,
+            SELECT COALESCE(delivered_post_intent, post_intent) intent,
+                   COUNT(*) posts, AVG(replies) replies_per_post,
                    AVG(reposts) reposts_per_post, AVG(clicks) clicks_per_post,
                    AVG(confirmed_orders) orders_per_post,
                    AVG(confirmed_commission) commission_per_post
             FROM threads_posts WHERE status='published' AND posted_at>=?
-              AND post_intent IN ('GROWTH','AFFILIATE') GROUP BY post_intent
+              AND COALESCE(delivered_post_intent, post_intent)
+                  IN ('GROWTH','AFFILIATE')
+            GROUP BY COALESCE(delivered_post_intent, post_intent)
             """, ((now - timedelta(days=14)).isoformat(),)
         ).fetchall()
         intent_views = {}
         for row in intent_rows:
             values = [float(item[0]) for item in database.connection.execute(
-                "SELECT views FROM threads_posts WHERE status='published' AND posted_at>=? AND post_intent=? AND views IS NOT NULL",
-                ((now - timedelta(days=14)).isoformat(), row["post_intent"]),
+                "SELECT views FROM threads_posts WHERE status='published' AND posted_at>=? AND COALESCE(delivered_post_intent, post_intent)=? AND views IS NOT NULL",
+                ((now - timedelta(days=14)).isoformat(), row["intent"]),
             )]
-            intent_views[row["post_intent"]] = values
+            intent_views[row["intent"]] = values
             dist = distribution_stats(values)
             print(
-                f"{row['post_intent']} count={row['posts']} median_views={value(dist.median)} "
+                f"{row['intent']}_DELIVERED count={row['posts']} median_views={value(dist.median)} "
                 f"p75_views={value(dist.p75)} replies/post={value(row['replies_per_post'])} "
                 f"reposts/post={value(row['reposts_per_post'])} clicks/post={value(row['clicks_per_post'])} "
                 f"orders/post={value(row['orders_per_post'])} commission/post={value(row['commission_per_post'])}"
@@ -140,11 +143,56 @@ def main() -> int:
         runtime_days = 0.0
         if experiment and experiment["started_at"]:
             runtime_days = max(0.0, (now - datetime.fromisoformat(experiment["started_at"])).total_seconds() / 86400)
+        assigned_intent_views = {}
+        for intent in ("AFFILIATE", "GROWTH"):
+            assigned_intent_views[intent] = [
+                float(item[0]) for item in database.connection.execute(
+                    """SELECT views FROM threads_posts
+                       WHERE status='published' AND posted_at>=?
+                         AND COALESCE(assigned_post_intent, post_intent)=?
+                         AND views IS NOT NULL""",
+                    ((now - timedelta(days=14)).isoformat(), intent),
+                )
+            ]
         evaluation = evaluate_views_experiment(
-            intent_views.get("AFFILIATE", []), intent_views.get("GROWTH", []), runtime_days
+            assigned_intent_views.get("AFFILIATE", []),
+            assigned_intent_views.get("GROWTH", []),
+            runtime_days,
         )
         print(f"POST_INTENT_DECISION_STATUS={evaluation.status.value}")
         print(f"POST_INTENT_DECISION={evaluation.decision}")
+        print("POST_INTENT_DECISION_BASIS=ITT_ASSIGNED")
+        print("\nPOST_INTENT_ASSIGNMENT_DELIVERY_14D")
+        intent_summary = database.connection.execute(
+            """
+            SELECT
+              SUM(CASE WHEN COALESCE(assigned_post_intent, post_intent)='AFFILIATE' THEN 1 ELSE 0 END) affiliate_assigned,
+              SUM(CASE WHEN COALESCE(assigned_post_intent, post_intent)='GROWTH' THEN 1 ELSE 0 END) growth_assigned,
+              SUM(CASE WHEN COALESCE(delivered_post_intent, post_intent)='AFFILIATE' THEN 1 ELSE 0 END) affiliate_delivered,
+              SUM(CASE WHEN COALESCE(delivered_post_intent, post_intent)='GROWTH' THEN 1 ELSE 0 END) growth_delivered,
+              SUM(CASE WHEN assigned_post_intent='AFFILIATE' AND delivered_post_intent='GROWTH' THEN 1 ELSE 0 END) fallback_count,
+              SUM(CASE WHEN assigned_post_intent='AFFILIATE' THEN 1 ELSE 0 END) explicit_affiliate_assigned
+            FROM threads_posts WHERE status='published' AND posted_at>=?
+            """,
+            ((now - timedelta(days=14)).isoformat(),),
+        ).fetchone()
+        fallback_count = int(intent_summary["fallback_count"] or 0)
+        assigned_count = int(intent_summary["explicit_affiliate_assigned"] or 0)
+        fallback_rate = fallback_count / assigned_count if assigned_count else None
+        print(f"AFFILIATE_ASSIGNED={int(intent_summary['affiliate_assigned'] or 0)}")
+        print(f"GROWTH_ASSIGNED={int(intent_summary['growth_assigned'] or 0)}")
+        print(f"AFFILIATE_DELIVERED={int(intent_summary['affiliate_delivered'] or 0)}")
+        print(f"GROWTH_DELIVERED={int(intent_summary['growth_delivered'] or 0)}")
+        print(f"AFFILIATE_TO_GROWTH_FALLBACK_COUNT={fallback_count}")
+        print(f"AFFILIATE_TO_GROWTH_FALLBACK_RATE={value(fallback_rate)}")
+        failed_fallbacks = database.connection.execute(
+            """SELECT COUNT(*) FROM threads_posts
+               WHERE status IN ('failed','skipped') AND posted_at>=?
+                 AND assigned_post_intent='AFFILIATE'
+                 AND post_intent_fallback_reason='AFFILIATE_NO_ELIGIBLE_PRODUCT'""",
+            ((now - timedelta(days=14)).isoformat(),),
+        ).fetchone()[0]
+        print(f"AFFILIATE_NO_PRODUCT_SKIP_COUNT={int(failed_fallbacks)}")
         print("\nPOST_INTENT_4_CELLS_14D")
         rows = database.connection.execute(
             """

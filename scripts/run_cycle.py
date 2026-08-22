@@ -7,7 +7,7 @@ import sqlite3
 import sys
 import os
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
@@ -45,16 +45,11 @@ from app.config import (  # noqa: E402
     THREADS_PUBLISHING,
     POST_INTENT_EXPERIMENT_ENABLED,
     POST_INTENT_EPOCH,
-    THREADS_TOPIC_TAGS,
     load_settings,
     load_threads_access_token,
 )
 from app.database import Database  # noqa: E402
-from app.growth_content import (  # noqa: E402
-    generate_generic_growth_post,
-    generate_growth_post,
-    validate_growth_text,
-)
+from app.growth_content import validate_growth_text  # noqa: E402
 from app.growth_controller import (  # noqa: E402
     BoundedGrowthController,
     current_policy_version,
@@ -64,6 +59,11 @@ from app.growth_optimizer import Bottleneck, diagnose  # noqa: E402
 from app.init import initialize_database  # noqa: E402
 from app.post_intent import (  # noqa: E402
     PostIntent, assign_post_intent, ensure_post_intent_experiment,
+)
+from app.post_intent_delivery import (  # noqa: E402
+    AFFILIATE_NO_ELIGIBLE_PRODUCT,
+    prepare_growth_candidate,
+    resolve_delivered_intent,
 )
 from app.publishers.threads import (  # noqa: E402
     ThreadsAPIError,
@@ -78,9 +78,6 @@ from app.optimizer_selector import (  # noqa: E402
 )
 from app.rakuten_client import RakutenAPIError, RakutenClient  # noqa: E402
 from app.run_lock import CycleLock, LockAlreadyHeld  # noqa: E402
-from app.topic_discovery import (  # noqa: E402
-    discover_growth_topic,
-)
 
 
 LOGGER = logging.getLogger("affiliate_automation")
@@ -266,8 +263,10 @@ def run_cycle(args: argparse.Namespace) -> int:
                 if policy.force_control:
                     assigned_arm = ExperimentArm.CONTROL
                     formal_experiment = False
-                post_intent = PostIntent.AFFILIATE
+                assigned_post_intent = PostIntent.AFFILIATE
                 growth_template = None
+                post_intent_fallback_reason = None
+                fallback_used = False
                 if (
                     POST_INTENT_EXPERIMENT_ENABLED
                     and diagnose(database.connection, now).current_bottleneck
@@ -275,59 +274,42 @@ def run_cycle(args: argparse.Namespace) -> int:
                 ):
                     if not args.dry_run:
                         ensure_post_intent_experiment(database.connection, now)
-                    post_intent = assign_post_intent(now)
+                    assigned_post_intent = assign_post_intent(now)
+                delivered_post_intent = assigned_post_intent
                 LOGGER.info(
-                    "Intent assigned post_intent=%s intent_assignment_epoch=%s",
-                    post_intent.value,
+                    "Intent assigned assigned_post_intent=%s intent_assignment_epoch=%s",
+                    assigned_post_intent.value,
                     POST_INTENT_EPOCH,
                 )
 
                 candidates = []
                 production_candidate = None
                 optimizer_choice = None
-                if post_intent == PostIntent.GROWTH:
-                    try:
-                        candidate = generate_generic_growth_post(
-                            now, search_terms, THREADS_TOPIC_TAGS
-                        )
-                        growth_topic = candidate.topic_tag
-                        if not args.dry_run:
-                            try:
-                                growth_topic = discover_growth_topic(
-                                    database, load_threads_access_token(),
-                                    candidate.search_keyword, candidate.topic_tag, now,
-                                )
-                            except (ConfigurationError, ThreadsAPIError):
-                                LOGGER.warning("Growth topic fallback source=generic")
-                        growth_post = generate_growth_post(candidate, now, growth_topic)
-                        hash_since = (
-                            now - timedelta(days=THREADS_PUBLISHING.text_cooldown_days)
-                        ).isoformat()
-                        duplicate_growth = database.has_published_text_hash_since(
-                            growth_post.text_hash, hash_since
-                        )
-                    except ValueError:
+                if assigned_post_intent == PostIntent.GROWTH:
+                    candidate, growth_error = prepare_growth_candidate(
+                        database, now, search_terms, dry_run=args.dry_run
+                    )
+                    if growth_error == "GENERATION_FAILED":
                         LOGGER.info(
-                            "Post skipped post_intent=GROWTH growth_candidate_available=false "
+                            "Post skipped assigned_post_intent=GROWTH delivered_post_intent=none "
+                            "fallback_used=false growth_candidate_available=false "
                             "publish_attempted=false skip_reason=GROWTH_SKIP_GENERATION_FAILED"
                         )
                         print("実行結果: GROWTH_SKIP_GENERATION_FAILED", flush=True)
                         return 0
-                    else:
-                        if duplicate_growth:
-                            LOGGER.info(
-                                "Post skipped post_intent=GROWTH growth_candidate_available=true "
-                                "publish_attempted=false skip_reason=GROWTH_SKIP_DUPLICATE_TEXT"
-                            )
-                            print("実行結果: GROWTH_SKIP_DUPLICATE_TEXT", flush=True)
-                            return 0
-                        else:
-                            candidate = growth_post
-                            growth_template = growth_post.template
-                            LOGGER.info(
-                                "Growth candidate candidate_source=generic_pet_content "
-                                "affiliate_candidate_count=not_required growth_candidate_available=true"
-                            )
+                    if growth_error == "DUPLICATE":
+                        LOGGER.info(
+                            "Post skipped assigned_post_intent=GROWTH delivered_post_intent=none "
+                            "fallback_used=false growth_candidate_available=true "
+                            "publish_attempted=false skip_reason=GROWTH_SKIP_DUPLICATE_TEXT"
+                        )
+                        print("実行結果: GROWTH_SKIP_DUPLICATE_TEXT", flush=True)
+                        return 0
+                    growth_template = candidate.template
+                    LOGGER.info(
+                        "Growth candidate candidate_source=generic_pet_content "
+                        "affiliate_candidate_count=not_required growth_candidate_available=true"
+                    )
                 else:
                     candidates = find_eligible_candidates(
                         database, THREADS_PUBLISHING, now
@@ -339,57 +321,119 @@ def run_cycle(args: argparse.Namespace) -> int:
                         len(candidates),
                     )
                     if not candidates:
+                        fallback_used = True
+                        delivered_post_intent, post_intent_fallback_reason = (
+                            resolve_delivered_intent(
+                                assigned_post_intent, len(candidates)
+                            )
+                        )
                         LOGGER.info(
-                            "Post skipped post_intent=AFFILIATE publish_attempted=false "
-                            "skip_reason=AFFILIATE_SKIP_NO_ELIGIBLE_PRODUCT"
+                            "Affiliate fallback assigned_post_intent=AFFILIATE "
+                            "affiliate_candidate_count=0 fallback_used=true "
+                            "fallback_reason=%s delivered_post_intent=GROWTH",
+                            post_intent_fallback_reason,
                         )
-                        print(
-                            "実行結果: AFFILIATE_SKIP_NO_ELIGIBLE_PRODUCT",
-                            flush=True,
+                        candidate, growth_error = prepare_growth_candidate(
+                            database, now, search_terms, dry_run=args.dry_run
                         )
-                        return 0
-                    production_candidate = candidates[0]
-                    optimizer = PerformanceOptimizerSelector(database.connection)
-                    if args.dry_run:
-                        run_mode = "dry_run"
-                    elif state.execution_state == ExecutionState.SHADOW:
-                        run_mode = "shadow"
+                        if growth_error:
+                            suffix = (
+                                "GROWTH_DUPLICATE"
+                                if growth_error == "DUPLICATE"
+                                else "GROWTH_GENERATION_FAILED"
+                            )
+                            skip_reason = f"AFFILIATE_FALLBACK_{suffix}"
+                            LOGGER.info(
+                                "Post skipped assigned_post_intent=AFFILIATE "
+                                "delivered_post_intent=none affiliate_candidate_count=0 "
+                                "fallback_used=true fallback_reason=%s "
+                                "growth_candidate_available=%s publish_attempted=false skip_reason=%s",
+                                post_intent_fallback_reason,
+                                growth_error == "DUPLICATE",
+                                skip_reason,
+                            )
+                            if not args.dry_run:
+                                database.record_threads_post(
+                                    item_code=None,
+                                    threads_post_id=None,
+                                    posted_at=now.isoformat(),
+                                    deal_score=0.0,
+                                    price=None,
+                                    text_hash=(
+                                        candidate.text_hash
+                                        if candidate is not None
+                                        else f"skip:{cycle_id}"
+                                    ),
+                                    status="skipped",
+                                    post_intent="GROWTH",
+                                    assigned_post_intent=assigned_post_intent.value,
+                                    delivered_post_intent="NONE",
+                                    post_intent_fallback_reason=post_intent_fallback_reason,
+                                    post_intent_epoch=POST_INTENT_EPOCH,
+                                    growth_template=(
+                                        candidate.template
+                                        if candidate is not None else None
+                                    ),
+                                    growth_policy_version=growth_policy_version,
+                                )
+                            print(f"実行結果: {skip_reason}", flush=True)
+                            return 0
+                        growth_template = candidate.template
                     else:
-                        run_mode = f"{state.execution_state.value.lower()}_{assigned_arm.value.lower()}"
-                    try:
-                        analysis = optimizer.analyze(
-                            candidates, decided_at=now, reward_mode=state.reward_mode
-                        )
-                        optimizer.persist_scores(
-                            analysis, cycle_id=cycle_id, run_mode=run_mode,
-                            decided_at=now, reward_mode=state.reward_mode,
-                            experiment_epoch=state.experiment_epoch,
-                        )
-                        optimizer_choice = analysis.ranking[0] if analysis.ranking else None
-                        candidate, selected_by = choose_candidate_for_arm(
-                            candidates, analysis, state, assigned_arm
-                        )
-                        selector_used = selected_by
-                    except sqlite3.Error:
-                        raise
-                    except Exception as error:
-                        state = controller.evaluate(
-                            new_controller_evaluation_id(), now=now,
-                            optimizer_error=type(error).__name__,
-                        )
-                        selector_used = "FALLBACK_CONTROL"
-                        formal_experiment = False
-                        candidate = production_candidate
-                    if optimizer_choice is not None:
-                        optimizer.persist_decision(
-                            cycle_id=cycle_id, run_mode=run_mode, decided_at=now,
-                            production_item_code=production_candidate.product.item_code,
-                            optimizer_choice=optimizer_choice,
-                            selected_item_code=candidate.product.item_code,
-                            reward_mode=state.reward_mode,
-                            experiment_epoch=state.experiment_epoch,
-                            experiment_arm=assigned_arm,
-                        )
+                        production_candidate = candidates[0]
+                        optimizer = PerformanceOptimizerSelector(database.connection)
+                        if args.dry_run:
+                            run_mode = "dry_run"
+                        elif state.execution_state == ExecutionState.SHADOW:
+                            run_mode = "shadow"
+                        else:
+                            run_mode = f"{state.execution_state.value.lower()}_{assigned_arm.value.lower()}"
+                        try:
+                            analysis = optimizer.analyze(
+                                candidates, decided_at=now, reward_mode=state.reward_mode
+                            )
+                            optimizer.persist_scores(
+                                analysis, cycle_id=cycle_id, run_mode=run_mode,
+                                decided_at=now, reward_mode=state.reward_mode,
+                                experiment_epoch=state.experiment_epoch,
+                            )
+                            optimizer_choice = analysis.ranking[0] if analysis.ranking else None
+                            candidate, selected_by = choose_candidate_for_arm(
+                                candidates, analysis, state, assigned_arm
+                            )
+                            selector_used = selected_by
+                        except sqlite3.Error:
+                            raise
+                        except Exception as error:
+                            state = controller.evaluate(
+                                new_controller_evaluation_id(), now=now,
+                                optimizer_error=type(error).__name__,
+                            )
+                            selector_used = "FALLBACK_CONTROL"
+                            formal_experiment = False
+                            candidate = production_candidate
+                        if optimizer_choice is not None:
+                            optimizer.persist_decision(
+                                cycle_id=cycle_id, run_mode=run_mode, decided_at=now,
+                                production_item_code=production_candidate.product.item_code,
+                                optimizer_choice=optimizer_choice,
+                                selected_item_code=candidate.product.item_code,
+                                reward_mode=state.reward_mode,
+                                experiment_epoch=state.experiment_epoch,
+                                experiment_arm=assigned_arm,
+                            )
+                post_intent = delivered_post_intent
+                LOGGER.info(
+                    "Intent delivery assigned_post_intent=%s delivered_post_intent=%s "
+                    "affiliate_candidate_count=%s fallback_used=%s fallback_reason=%s "
+                    "growth_candidate_available=%s",
+                    assigned_post_intent.value,
+                    delivered_post_intent.value,
+                    len(candidates) if assigned_post_intent == PostIntent.AFFILIATE else "not_required",
+                    str(fallback_used).lower(),
+                    post_intent_fallback_reason or "none",
+                    delivered_post_intent == PostIntent.GROWTH,
+                )
                 try:
                     if post_intent == PostIntent.GROWTH:
                         validate_growth_text(candidate.text)
@@ -474,6 +518,9 @@ def run_cycle(args: argparse.Namespace) -> int:
                         )
                     print(f"topic_tag: {candidate.topic_tag}")
                     print(f"post_intent: {post_intent.value}")
+                    print(f"assigned_post_intent: {assigned_post_intent.value}")
+                    print(f"delivered_post_intent: {delivered_post_intent.value}")
+                    print(f"fallback_reason: {post_intent_fallback_reason or 'N/A'}")
                     print(f"template_variant: {candidate.template_variant}")
                     print(f"tip_id: {candidate.tip_id or 'N/A'}")
                     print(f"content_trigger: {candidate.content_trigger or 'N/A'}")
@@ -521,14 +568,24 @@ def run_cycle(args: argparse.Namespace) -> int:
                         delivered_media_variant="NO_COMIC",
                         comic_media_experiment_epoch=COMIC_MEDIA_EXPERIMENT_EPOCH,
                         post_intent=post_intent.value,
+                        assigned_post_intent=assigned_post_intent.value,
+                        delivered_post_intent=delivered_post_intent.value,
+                        post_intent_fallback_reason=post_intent_fallback_reason,
+                        post_intent_epoch=POST_INTENT_EPOCH,
                         growth_template=growth_template,
                         growth_policy_version=growth_policy_version,
                     )
                     record_publish_result(database.connection, cycle_id, "failed")
                     LOGGER.error(
-                        "Threads publish failed item_code=%s error=%s",
+                        "Threads publish failed item_code=%s error=%s "
+                        "assigned_post_intent=%s delivered_post_intent=%s "
+                        "fallback_used=%s fallback_reason=%s publish_succeeded=false",
                         candidate.product.item_code,
                         error,
+                        assigned_post_intent.value,
+                        delivered_post_intent.value,
+                        str(fallback_used).lower(),
+                        post_intent_fallback_reason or "none",
                     )
                     return 1
 
@@ -562,6 +619,10 @@ def run_cycle(args: argparse.Namespace) -> int:
                         experiment_epoch=state.experiment_epoch,
                         comic_media_experiment_epoch=COMIC_MEDIA_EXPERIMENT_EPOCH,
                         post_intent=post_intent.value,
+                        assigned_post_intent=assigned_post_intent.value,
+                        delivered_post_intent=delivered_post_intent.value,
+                        post_intent_fallback_reason=post_intent_fallback_reason,
+                        post_intent_epoch=POST_INTENT_EPOCH,
                         growth_template=growth_template,
                         growth_policy_version=growth_policy_version,
                     )
@@ -592,15 +653,25 @@ def run_cycle(args: argparse.Namespace) -> int:
                         comic_media_experiment_epoch=COMIC_MEDIA_EXPERIMENT_EPOCH,
                         comic_fallback_reason=media_outcome.fallback_reason,
                         post_intent=post_intent.value,
+                        assigned_post_intent=assigned_post_intent.value,
+                        delivered_post_intent=delivered_post_intent.value,
+                        post_intent_fallback_reason=post_intent_fallback_reason,
+                        post_intent_epoch=POST_INTENT_EPOCH,
                         growth_template=growth_template,
                         growth_policy_version=growth_policy_version,
                     )
                 record_publish_result(database.connection, cycle_id, "published")
                 LOGGER.info(
-                    "Threads publish succeeded item_code=%s deal_score=%.2f post_id=%s",
+                    "Threads publish succeeded item_code=%s deal_score=%.2f post_id=%s "
+                    "assigned_post_intent=%s delivered_post_intent=%s "
+                    "fallback_used=%s fallback_reason=%s publish_succeeded=true",
                     candidate.product.item_code,
                     candidate.deal_score,
                     post_id,
+                    assigned_post_intent.value,
+                    delivered_post_intent.value,
+                    str(fallback_used).lower(),
+                    post_intent_fallback_reason or "none",
                 )
                 return 0
         except RakutenAPIError as error:

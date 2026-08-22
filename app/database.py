@@ -91,6 +91,10 @@ CREATE TABLE IF NOT EXISTS threads_posts (
     comic_media_experiment_epoch TEXT,
     comic_fallback_reason TEXT,
     post_intent TEXT,
+    assigned_post_intent TEXT,
+    delivered_post_intent TEXT,
+    post_intent_fallback_reason TEXT,
+    post_intent_epoch TEXT,
     growth_template TEXT,
     unique_repliers INTEGER,
     conversation_depth INTEGER,
@@ -415,6 +419,10 @@ THREADS_INSIGHTS_MIGRATION_COLUMNS = {
     "comic_media_experiment_epoch": "TEXT",
     "comic_fallback_reason": "TEXT",
     "post_intent": "TEXT",
+    "assigned_post_intent": "TEXT",
+    "delivered_post_intent": "TEXT",
+    "post_intent_fallback_reason": "TEXT",
+    "post_intent_epoch": "TEXT",
     "growth_template": "TEXT",
     "unique_repliers": "INTEGER",
     "conversation_depth": "INTEGER",
@@ -821,6 +829,10 @@ class Database:
         comic_media_experiment_epoch: Optional[str] = None,
         comic_fallback_reason: Optional[str] = None,
         post_intent: str = "AFFILIATE",
+        assigned_post_intent: Optional[str] = None,
+        delivered_post_intent: Optional[str] = None,
+        post_intent_fallback_reason: Optional[str] = None,
+        post_intent_epoch: Optional[str] = None,
         growth_template: Optional[str] = None,
         growth_policy_version: str = GROWTH_POLICY_INITIAL_VERSION,
     ) -> None:
@@ -836,8 +848,10 @@ class Database:
                     assigned_media_variant, delivered_media_variant,
                     media_url, media_url_expires_at, media_hosting_provider,
                     comic_media_experiment_epoch, comic_fallback_reason,
-                    post_intent, growth_template, growth_policy_version
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    post_intent, assigned_post_intent, delivered_post_intent,
+                    post_intent_fallback_reason, post_intent_epoch,
+                    growth_template, growth_policy_version
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     item_code,
@@ -867,6 +881,10 @@ class Database:
                     comic_media_experiment_epoch,
                     comic_fallback_reason,
                     post_intent,
+                    assigned_post_intent or post_intent,
+                    delivered_post_intent or post_intent,
+                    post_intent_fallback_reason,
+                    post_intent_epoch,
                     growth_template,
                     growth_policy_version,
                 ),
@@ -936,6 +954,10 @@ class Database:
         experiment_epoch: Optional[str] = None,
         comic_media_experiment_epoch: Optional[str] = None,
         post_intent: str = "AFFILIATE",
+        assigned_post_intent: Optional[str] = None,
+        delivered_post_intent: Optional[str] = None,
+        post_intent_fallback_reason: Optional[str] = None,
+        post_intent_epoch: Optional[str] = None,
         growth_template: Optional[str] = None,
         growth_policy_version: str = GROWTH_POLICY_INITIAL_VERSION,
         usage_item_code: Optional[str] = None,
@@ -952,10 +974,12 @@ class Database:
                     comic_id, comic_file, comic_stock_version,
                     assigned_media_variant, delivered_media_variant,
                     media_url, media_hosting_provider,
-                    comic_media_experiment_epoch, post_intent, growth_template,
-                    growth_policy_version
+                    comic_media_experiment_epoch, post_intent,
+                    assigned_post_intent, delivered_post_intent,
+                    post_intent_fallback_reason, post_intent_epoch,
+                    growth_template, growth_policy_version
                 ) VALUES (?, ?, ?, ?, ?, ?, 'published', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                          'COMIC', 'COMIC', ?, ?, ?, ?, ?, ?)
+                          'COMIC', 'COMIC', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     item_code, threads_post_id, posted_at, deal_score,
@@ -965,7 +989,12 @@ class Database:
                     comic_id, comic_file, comic_stock_version,
                     media_url, media_hosting_provider,
                     comic_media_experiment_epoch,
-                    post_intent, growth_template,
+                    post_intent,
+                    assigned_post_intent or post_intent,
+                    delivered_post_intent or post_intent,
+                    post_intent_fallback_reason,
+                    post_intent_epoch,
+                    growth_template,
                     growth_policy_version,
                 ),
             )

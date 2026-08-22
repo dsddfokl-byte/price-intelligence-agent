@@ -583,14 +583,16 @@ class BoundedGrowthController:
             runtime_days = max(0.0, (current - started).total_seconds() / 86400.0)
             rows = self.connection.execute(
                 """
-                SELECT post_intent, views FROM threads_posts
+                SELECT COALESCE(assigned_post_intent, post_intent) assigned_intent,
+                       views FROM threads_posts
                 WHERE status='published' AND posted_at>=? AND posted_at<=?
-                  AND post_intent IN ('AFFILIATE','GROWTH') AND views IS NOT NULL
+                  AND COALESCE(assigned_post_intent, post_intent)
+                      IN ('AFFILIATE','GROWTH') AND views IS NOT NULL
                 """,
                 (started.isoformat(), current.isoformat()),
             ).fetchall()
-            control = [float(row["views"]) for row in rows if row["post_intent"] == "AFFILIATE"]
-            treatment = [float(row["views"]) for row in rows if row["post_intent"] == "GROWTH"]
+            control = [float(row["views"]) for row in rows if row["assigned_intent"] == "AFFILIATE"]
+            treatment = [float(row["views"]) for row in rows if row["assigned_intent"] == "GROWTH"]
             duration = max(current - started, timedelta(days=1))
             baseline_guardrails = metrics_for_period(self.connection, started - duration, started)
             current_guardrails = metrics_for_period(self.connection, started, current)

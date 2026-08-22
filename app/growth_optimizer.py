@@ -172,7 +172,9 @@ def _dimension_summaries(rows: Sequence[sqlite3.Row]) -> Dict[str, Dict[str, Dim
         "category": lambda row: row["search_keyword"],
         "topic_tag": lambda row: row["topic_tag"],
         "posting_slot": lambda row: _posting_slot(row["posted_at"]),
-        "post_intent": lambda row: row["post_intent"],
+        "post_intent": lambda row: row["delivered_post_intent"] or row["post_intent"],
+        "assigned_post_intent": lambda row: row["assigned_post_intent"] or row["post_intent"],
+        "delivered_post_intent": lambda row: row["delivered_post_intent"] or row["post_intent"],
         "intent_media": lambda row: (
             f"{row['post_intent']} × {row['delivered_media_variant']}"
             if row["post_intent"] and row["delivered_media_variant"] else None
@@ -204,7 +206,8 @@ def compute_window_metrics(
         """
         SELECT posted_at, views, likes, replies, reposts, quotes, shares, clicks,
                confirmed_orders, confirmed_commission, delivered_media_variant,
-               comic_id, search_keyword, topic_tag, post_intent
+               comic_id, search_keyword, topic_tag, post_intent,
+               assigned_post_intent, delivered_post_intent
         FROM threads_posts
         WHERE status = 'published' AND posted_at >= ? AND posted_at <= ?
         ORDER BY posted_at
